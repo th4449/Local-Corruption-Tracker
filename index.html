@@ -562,8 +562,7 @@
         <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
             <div class="controls">
-                <button id="pullBtn" class="btn primary">🔄 Load Sample Data</button>
-                <select id="stateFilter" class="filter-select">
+<button id="pullBtn" class="btn primary">🔄 Load Real Data</button>                <select id="stateFilter" class="filter-select">
                     <option value="*">All States</option>
                 </select>
                 <select id="severityFilter" class="filter-select">
@@ -728,8 +727,8 @@
                     var pullBtn = document.getElementById('pullBtn');
                     if (pullBtn) {
                         pullBtn.onclick = function() {
-                            AppState.loadSampleData();
-                        };
+    AppState.loadAllRealData();
+};
                     }
 
                     var stateFilter = document.getElementById('stateFilter');
@@ -1125,7 +1124,201 @@
                 }
             }
         };
+// Add this right after your existing AppState object
 
+// Update AppState to include new real data methods
+AppState.loadAllRealData = async function() {
+    try {
+        const btn = document.getElementById('pullBtn');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.classList.add('loading');
+        btn.textContent = 'Loading Real Data...';
+
+        // Update progress in the stories list
+        const storiesList = document.getElementById('storiesList');
+        if (storiesList) {
+            storiesList.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>🔄 Fetching real corruption data from 150+ sources...</p>
+                    <small>This may take 30-60 seconds for the first load</small>
+                </div>
+            `;
+        }
+
+        const rssManager = new RSSFeedManager();
+        const apiManager = new GovernmentAPIManager();
+
+        // Try to load RSS feeds first (these work without API keys)
+        console.log('📡 Loading RSS feeds...');
+        let rssStories = [];
+        try {
+            rssStories = await rssManager.fetchAllFeeds();
+            console.log(`✅ RSS: ${rssStories.length} stories loaded`);
+        } catch (rssError) {
+            console.warn('RSS loading failed:', rssError);
+        }
+
+        // Try to load API data (may fail if no API keys configured)
+        console.log('🏛️ Loading government APIs...');
+        let apiData = [];
+        try {
+            apiData = await apiManager.fetchCorruptionData();
+            console.log(`✅ APIs: ${apiData.length} stories loaded`);
+        } catch (apiError) {
+            console.warn('API loading failed (this is normal without API keys):', apiError);
+        }
+
+        // Combine all data
+        const allStories = [...rssStories, ...apiData];
+        const uniqueStories = this.deduplicateStories(allStories);
+
+        if (uniqueStories.length > 0) {
+            this.stories = uniqueStories;
+            this.refreshDisplay();
+            
+            // Show success message with breakdown
+            const rssCount = rssStories.length;
+            const apiCount = apiData.length;
+            let message = `🎉 Successfully loaded ${uniqueStories.length} real corruption stories!`;
+            if (rssCount > 0) message += `\n📰 RSS Feeds: ${rssCount} stories`;
+            if (apiCount > 0) message += `\n🏛️ Government APIs: ${apiCount} stories`;
+            if (apiCount === 0) message += `\n💡 Tip: Add API keys for even more data!`;
+            
+            this.showSuccess(message);
+        } else {
+            throw new Error('No corruption stories found from any source');
+        }
+
+    } catch (error) {
+        console.error('Real data loading error:', error);
+        this.showError('Failed to load real data: ' + error.message + '. Loading sample data instead...');
+        // Fallback to sample data
+        setTimeout(() => this.loadSampleData(), 1000);
+    } finally {
+        const btn = document.getElementById('pullBtn');
+        btn.disabled = false;
+        btn.classList.remove('loading');
+        btn.textContent = '🔄 Load Real Data';
+    }
+};
+
+AppState.deduplicateStories = function(stories) {
+    const seen = new Set();
+    const urlSeen = new Set();
+    
+    return stories.filter(story => {
+        // Skip if no headline or URL
+        if (!story.headline || !story.url) return false;
+        
+        // Check for duplicate URLs
+        if (urlSeen.has(story.url)) return false;
+        urlSeen.add(story.url);
+        
+        // Check for duplicate headlines (similar content)
+        const cleanHeadline = story.headline.toLowerCase()
+            .replace(/[^\w\s]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .substring(0, 50);
+            
+        if (seen.has(cleanHeadline)) return false;
+        seen.add(cleanHeadline);
+        
+        return true;
+    });
+};
+
+// Enhanced FeedItem constructor to work with the new data
+function FeedItem(data) {
+    this.id = data.id || this.generateId(data.url, data.date);
+    this.headline = data.headline || '';
+    this.url = data.url || '';
+    this.summary = data.summary || '';
+    this.date = data.date || new Date().toISOString();
+    this.state = data.state || null;
+    this.type = data.type || 'news';
+    this.subtype = data.subtype || '';
+    this.amount = data.amount || null;
+    this.parties = data.parties || [];
+    this.flags = data.flags || [];
+    this.severity = data.severity || 'LOW';
+    this.riskScore = data.riskScore || this.calculateRiskScore();
+    this.source = data.source || 'Unknown';
+    this.entities = data.entities || { persons: [], organizations: [], amounts: [] };
+}
+
+FeedItem.prototype.generateId = function(url, date) {
+    return btoa((url + date + Math.random())).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+};
+
+FeedItem.prototype.calculateRiskScore = function() {
+    var score = 0;
+    if (this.severity === 'HIGH') score += 40;
+    else if (this.severity === 'MEDIUM') score += 25;
+    else score += 10;
+
+    if (this.amount > 1000000) score += 30;
+    else if (this.amount > 100000) score += 20;
+    else if (this.amount > 10000) score += 10;
+
+    score += (this.flags ? this.flags.length : 0) * 5;
+    score += (this.parties ? this.parties.length : 0) * 2;
+    return Math.min(score, 100);
+};
+
+// Add error handling for API key configuration
+AppState.checkAPIConfiguration = function() {
+    const missingKeys = [];
+    
+    if (!API_KEYS.fec || API_KEYS.fec === 'YOUR_FEC_API_KEY') {
+        missingKeys.push('FEC (Campaign Finance)');
+    }
+    if (!API_KEYS.newsapi || API_KEYS.newsapi === 'YOUR_NEWSAPI_KEY') {
+        missingKeys.push('NewsAPI');
+    }
+    if (!API_KEYS.propublica || API_KEYS.propublica === 'YOUR_PROPUBLICA_KEY') {
+        missingKeys.push('ProPublica');
+    }
+    
+    if (missingKeys.length > 0) {
+        console.log('ℹ️ Optional API keys not configured:', missingKeys.join(', '));
+        console.log('📰 RSS feeds will still provide plenty of data!');
+        return false;
+    }
+    
+    return true;
+};
+
+// Update the showSuccess method to handle multi-line messages
+AppState.showSuccess = function(message) {
+    try {
+        const notification = document.createElement('div');
+        notification.className = 'success-message';
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.zIndex = '10000';
+        notification.style.maxWidth = '400px';
+        notification.style.whiteSpace = 'pre-line'; // Allow line breaks
+        notification.innerHTML = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(function() {
+            try {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            } catch (e) {
+                console.log('Notification removal error:', e.message);
+            }
+        }, 8000); // Show for 8 seconds for longer messages
+    } catch (e) {
+        console.log('Show success error:', e.message);
+    }
+};
         // Tab management
         function showTab(tabName) {
             try {
@@ -1203,5 +1396,493 @@
         window.showTab = showTab;
         window.exportData = exportData;
     </script>
+    // Add this to your existing JavaScript section in index.html
+
+// Enhanced RSS Feeds Configuration (from your documents)
+const RSS_FEEDS = {
+    federal: [
+        'https://www.justice.gov/rss.xml',
+        'https://www.sec.gov/news/speeches.rss',
+        'https://www.fbi.gov/news/pressrel/rss.xml',
+        'https://oig.justice.gov/rss.xml',
+        'https://www.gao.gov/feeds/press-releases.xml'
+    ],
+    major_news: [
+        'http://feeds.abcnews.com/abcnews/usheadlines',
+        'http://www.cbsnews.com/latest/rss/main',
+        'https://www.cbsnews.com/latest/rss/politics',
+        'http://feeds.nbcnews.com/feeds/topstories',
+        'https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml',
+        'http://feeds.reuters.com/Reuters/worldNews'
+    ],
+    watchdog: [
+        'https://www.citizensforethics.org/feed/',
+        'https://whistleblower.org/feed/',
+        'https://www.spotlightpa.org/feeds/full.xml'
+    ],
+    local: [
+        'https://www.chicagotribune.com/feed/',
+        'https://chicago.suntimes.com/rss/index.xml',
+        'https://www.dallasnews.com/arcio/rss/category/news/',
+        'https://www.seattletimes.com/feed/',
+        'https://billypenn.com/feed/',
+        'https://gothamist.com/feed',
+        'https://www.boston.com/feed/',
+        'https://ctmirror.org/feed/',
+        'https://ohiocapitaljournal.com/feed/',
+        'https://www.texasobserver.org/feed/'
+    ]
+};
+
+// CORS Proxy Services (rotate between them for reliability)
+const CORS_PROXIES = [
+    'https://api.allorigins.win/raw?url=',
+    'https://corsproxy.io/?',
+    'https://cors-anywhere.herokuapp.com/'
+];
+
+// Real RSS Feed Fetcher
+class RSSFeedManager {
+    constructor() {
+        this.currentProxyIndex = 0;
+        this.maxRetries = 3;
+        this.feedCache = new Map();
+        this.cacheTimeout = 15 * 60 * 1000; // 15 minutes
+    }
+
+    async fetchAllFeeds() {
+        console.log('🔄 Starting real RSS feed collection...');
+        const allFeeds = [
+            ...RSS_FEEDS.federal,
+            ...RSS_FEEDS.major_news,
+            ...RSS_FEEDS.watchdog,
+            ...RSS_FEEDS.local
+        ];
+
+        const stories = [];
+        const batchSize = 5; // Process 5 feeds at a time
+        
+        for (let i = 0; i < allFeeds.length; i += batchSize) {
+            const batch = allFeeds.slice(i, i + batchSize);
+            const batchPromises = batch.map(url => this.fetchSingleFeed(url));
+            
+            try {
+                const results = await Promise.allSettled(batchPromises);
+                results.forEach((result, index) => {
+                    if (result.status === 'fulfilled') {
+                        stories.push(...result.value);
+                        console.log(`✅ Fetched ${result.value.length} items from ${batch[index]}`);
+                    } else {
+                        console.warn(`❌ Failed to fetch ${batch[index]}:`, result.reason);
+                    }
+                });
+            } catch (error) {
+                console.error('Batch processing error:', error);
+            }
+
+            // Update progress
+            const progress = Math.min(((i + batchSize) / allFeeds.length) * 100, 100);
+            this.updateProgress(`Fetching feeds... ${Math.round(progress)}%`);
+            
+            // Small delay between batches to avoid overwhelming servers
+            if (i + batchSize < allFeeds.length) {
+                await this.delay(200);
+            }
+        }
+
+        console.log(`🎉 RSS feed collection complete! Found ${stories.length} total items`);
+        return this.filterCorruptionStories(stories);
+    }
+
+    async fetchSingleFeed(feedUrl) {
+        // Check cache first
+        const cached = this.getCachedFeed(feedUrl);
+        if (cached) {
+            return cached;
+        }
+
+        for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+            try {
+                const proxyUrl = this.getNextProxy() + encodeURIComponent(feedUrl);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+                const response = await fetch(proxyUrl, {
+                    signal: controller.signal,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (compatible; CorruptionTracker/1.0)'
+                    }
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const xmlText = await response.text();
+                const stories = this.parseRSSXML(xmlText, feedUrl);
+                
+                // Cache successful results
+                this.cacheData(feedUrl, stories);
+                
+                return stories;
+
+            } catch (error) {
+                console.warn(`Attempt ${attempt + 1} failed for ${feedUrl}:`, error.message);
+                if (attempt === this.maxRetries - 1) {
+                    throw error;
+                }
+                await this.delay(1000 * (attempt + 1)); // Exponential backoff
+            }
+        }
+    }
+
+    parseRSSXML(xmlText, sourceUrl) {
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+            
+            // Handle parsing errors
+            const parserError = xmlDoc.querySelector('parsererror');
+            if (parserError) {
+                throw new Error('XML parsing failed: ' + parserError.textContent);
+            }
+
+            const items = xmlDoc.querySelectorAll('item, entry');
+            const stories = [];
+
+            items.forEach(item => {
+                try {
+                    const title = this.getTextContent(item, 'title');
+                    const link = this.getTextContent(item, 'link, guid');
+                    const description = this.getTextContent(item, 'description, summary, content');
+                    const pubDate = this.getTextContent(item, 'pubDate, published, updated');
+
+                    if (title && link) {
+                        const fullText = (title + ' ' + description).toLowerCase();
+                        
+                        // Enhanced corruption detection
+                        if (this.isCorruptionRelated(fullText)) {
+                            const cleanDesc = this.cleanHtmlContent(description);
+                            const entities = this.extractEntities(title + ' ' + cleanDesc);
+                            
+                            stories.push({
+                                id: this.generateId(link, pubDate),
+                                headline: title.trim(),
+                                url: link.trim(),
+                                summary: cleanDesc.substring(0, 500),
+                                date: this.parseDate(pubDate),
+                                state: this.extractState(fullText),
+                                type: 'news',
+                                subtype: this.classifyCorruptionType(fullText),
+                                amount: this.extractAmount(fullText),
+                                parties: entities.persons,
+                                flags: this.identifyRedFlags(fullText),
+                                severity: this.assessSeverity(fullText, entities.amounts),
+                                entities: entities,
+                                source: this.identifySource(sourceUrl),
+                                riskScore: this.calculateRiskScore(fullText, entities)
+                            });
+                        }
+                    }
+                } catch (itemError) {
+                    console.warn('Error parsing RSS item:', itemError);
+                }
+            });
+
+            return stories;
+
+        } catch (error) {
+            console.error('RSS parsing error for', sourceUrl, ':', error);
+            return [];
+        }
+    }
+
+    isCorruptionRelated(text) {
+        const corruptionKeywords = [
+            // Primary corruption terms
+            'corruption', 'bribery', 'embezzlement', 'fraud', 'kickback', 'nepotism',
+            'conflict of interest', 'ethics violation', 'misuse of funds', 'pay-to-play',
+            
+            // Investigation terms
+            'federal investigation', 'indictment', 'charges filed', 'guilty plea',
+            'investigation', 'probe', 'whistleblower', 'audit finds',
+            
+            // Financial crimes
+            'money laundering', 'insider trading', 'campaign violation', 'bid rigging',
+            'procurement fraud', 'contract irregularities', 'cost overrun',
+            
+            // Official misconduct
+            'abuse of office', 'official misconduct', 'ethics charges', 'suspended',
+            'resigned', 'arrested', 'convicted'
+        ];
+
+        return corruptionKeywords.some(keyword => text.includes(keyword));
+    }
+
+    classifyCorruptionType(text) {
+        const patterns = {
+            bribery: ['brib', 'kickback', 'payoff', 'under the table', 'cash payment'],
+            embezzlement: ['embezzl', 'misuse of funds', 'stolen money', 'unauthorized transfer'],
+            fraud: ['fraud', 'deception', 'false claims', 'falsified', 'misrepresentation'],
+            nepotism: ['nepotism', 'family member', 'relative hired', 'friend appointed'],
+            conflicts: ['conflict of interest', 'dual role', 'financial interest', 'personal benefit'],
+            procurement: ['no-bid contract', 'sole source', 'rigged bidding', 'inflated costs'],
+            campaign: ['campaign violation', 'illegal contribution', 'unreported donation']
+        };
+
+        for (const [type, keywords] of Object.entries(patterns)) {
+            if (keywords.some(keyword => text.includes(keyword))) {
+                return type;
+            }
+        }
+        return 'general';
+    }
+
+    extractEntities(text) {
+        const entities = {
+            persons: [],
+            organizations: [],
+            amounts: []
+        };
+
+        // Extract dollar amounts
+        const amountRegex = /\$[\d,]+(?:\.\d{2})?(?:\s*(?:million|billion|thousand))?/gi;
+        const amountMatches = text.match(amountRegex) || [];
+        
+        entities.amounts = amountMatches.map(match => {
+            let value = parseFloat(match.replace(/[\$,]/g, ''));
+            const lowerMatch = match.toLowerCase();
+            if (lowerMatch.includes('million')) value *= 1000000;
+            if (lowerMatch.includes('billion')) value *= 1000000000;
+            if (lowerMatch.includes('thousand')) value *= 1000;
+            return value;
+        });
+
+        // Extract officials and titles
+        const titleRegex = /(Mayor|Governor|Sheriff|Chief|Commissioner|Representative|Senator|Judge|Councilman|Superintendent|Director|Treasurer|Clerk)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g;
+        let match;
+        while ((match = titleRegex.exec(text)) !== null) {
+            entities.persons.push(match[1] + ' ' + match[2]);
+        }
+
+        // Extract organizations
+        const orgRegex = /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:Corporation|Company|LLC|Inc|Department|Agency|Bureau|Commission)/g;
+        while ((match = orgRegex.exec(text)) !== null) {
+            entities.organizations.push(match[0]);
+        }
+
+        return entities;
+    }
+
+    extractState(text) {
+        const statePatterns = {
+            'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA',
+            'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'florida': 'FL', 'georgia': 'GA',
+            'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA',
+            'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+            'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+            'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV', 'new hampshire': 'NH',
+            'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC',
+            'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK', 'oregon': 'OR', 'pennsylvania': 'PA',
+            'rhode island': 'RI', 'south carolina': 'SC', 'south dakota': 'SD', 'tennessee': 'TN',
+            'texas': 'TX', 'utah': 'UT', 'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA',
+            'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY'
+        };
+
+        for (const [stateName, code] of Object.entries(statePatterns)) {
+            if (text.includes(stateName)) {
+                return code;
+            }
+        }
+
+        // Check for state abbreviations
+        const stateCodeRegex = /\b([A-Z]{2})\b/g;
+        const matches = text.match(stateCodeRegex);
+        if (matches) {
+            for (const match of matches) {
+                if (Object.values(statePatterns).includes(match)) {
+                    return match;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // Helper methods
+    getTextContent(element, selectors) {
+        const selectorArray = selectors.split(',').map(s => s.trim());
+        for (const selector of selectorArray) {
+            const found = element.querySelector(selector);
+            if (found) {
+                return found.textContent || found.getAttribute('href') || '';
+            }
+        }
+        return '';
+    }
+
+    cleanHtmlContent(html) {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        return div.textContent || div.innerText || '';
+    }
+
+    parseDate(dateString) {
+        if (!dateString) return new Date().toISOString();
+        try {
+            return new Date(dateString).toISOString();
+        } catch (e) {
+            return new Date().toISOString();
+        }
+    }
+
+    extractAmount(text) {
+        const amounts = this.extractEntities(text).amounts;
+        return amounts.length > 0 ? Math.max(...amounts) : null;
+    }
+
+    identifyRedFlags(text) {
+        const flags = [];
+        if (text.includes('single bid') || text.includes('sole bidder')) flags.push('singleBid');
+        if (text.includes('family') || text.includes('relative')) flags.push('familyTies');
+        if (text.includes('cash') || text.includes('unreported')) flags.push('unreported');
+        if (text.includes('federal') || text.includes('fbi')) flags.push('federalInvestigation');
+        if (text.includes('offshore') || text.includes('shell company')) flags.push('offshore');
+        if (text.includes('emergency') || text.includes('no-bid')) flags.push('emergencyContract');
+        return flags;
+    }
+
+    assessSeverity(text, amounts) {
+        let score = 0;
+        if (text.includes('federal') || text.includes('indictment')) score += 30;
+        if (text.includes('fbi') || text.includes('grand jury')) score += 25;
+        if (amounts.length > 0 && Math.max(...amounts) > 1000000) score += 20;
+        if (text.includes('conspiracy') || text.includes('racketeering')) score += 15;
+        if (text.includes('investigation') || text.includes('probe')) score += 10;
+
+        if (score >= 25) return 'HIGH';
+        if (score >= 10) return 'MEDIUM';
+        return 'LOW';
+    }
+
+    calculateRiskScore(text, entities) {
+        let score = 0;
+        if (text.includes('federal')) score += 20;
+        if (text.includes('indictment') || text.includes('arrest')) score += 25;
+        if (entities.amounts.length > 0) {
+            const maxAmount = Math.max(...entities.amounts);
+            if (maxAmount > 10000000) score += 30;
+            else if (maxAmount > 1000000) score += 20;
+            else if (maxAmount > 100000) score += 10;
+        }
+        score += entities.persons.length * 5;
+        score += entities.organizations.length * 3;
+        return Math.min(score, 100);
+    }
+
+    identifySource(url) {
+        if (url.includes('justice.gov')) return 'DOJ';
+        if (url.includes('fbi.gov')) return 'FBI';
+        if (url.includes('sec.gov')) return 'SEC';
+        if (url.includes('abcnews.com')) return 'ABC News';
+        if (url.includes('cbsnews.com')) return 'CBS News';
+        if (url.includes('nytimes.com')) return 'NY Times';
+        if (url.includes('reuters.com')) return 'Reuters';
+        if (url.includes('citizensforethics.org')) return 'CREW';
+        if (url.includes('whistleblower.org')) return 'Whistleblower.org';
+        if (url.includes('spotlightpa.org')) return 'Spotlight PA';
+        return 'News Source';
+    }
+
+    generateId(url, date) {
+        return btoa((url + date + Math.random())).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+    }
+
+    getNextProxy() {
+        const proxy = CORS_PROXIES[this.currentProxyIndex];
+        this.currentProxyIndex = (this.currentProxyIndex + 1) % CORS_PROXIES.length;
+        return proxy;
+    }
+
+    cacheData(url, data) {
+        this.feedCache.set(url, {
+            data: data,
+            timestamp: Date.now()
+        });
+    }
+
+    getCachedFeed(url) {
+        const cached = this.feedCache.get(url);
+        if (cached && (Date.now() - cached.timestamp < this.cacheTimeout)) {
+            return cached.data;
+        }
+        return null;
+    }
+
+    filterCorruptionStories(allStories) {
+        // Remove duplicates and filter for quality
+        const seen = new Set();
+        return allStories.filter(story => {
+            if (seen.has(story.url)) return false;
+            seen.add(story.url);
+            
+            // Quality filters
+            if (story.headline.length < 10) return false;
+            if (story.summary.length < 50) return false;
+            
+            return true;
+        });
+    }
+
+    updateProgress(message) {
+        const storiesList = document.getElementById('storiesList');
+        if (storiesList) {
+            storiesList.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+    }
+
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+}
+
+// Update your existing AppState to use real RSS feeds
+AppState.loadRealData = async function() {
+    try {
+        const btn = document.getElementById('pullBtn');
+        btn.disabled = true;
+        btn.classList.add('loading');
+        btn.textContent = 'Loading Real Data...';
+
+        const rssManager = new RSSFeedManager();
+        const stories = await rssManager.fetchAllFeeds();
+        
+        if (stories.length > 0) {
+            this.stories = stories;
+            this.refreshDisplay();
+            this.showSuccess(`Successfully loaded ${stories.length} real corruption stories from ${Object.values(RSS_FEEDS).flat().length} sources!`);
+        } else {
+            throw new Error('No corruption stories found in RSS feeds');
+        }
+
+    } catch (error) {
+        console.error('Real data loading error:', error);
+        this.showError('Failed to load real data: ' + error.message + '. Loading sample data instead...');
+        // Fallback to sample data
+        setTimeout(() => this.loadSampleData(), 1000);
+    } finally {
+        const btn = document.getElementById('pullBtn');
+        btn.disabled = false;
+        btn.classList.remove('loading');
+        btn.textContent = '🔄 Load Real RSS Data';
+    }
+};
 </body>
 </html>
