@@ -51,3 +51,16 @@ Contributions welcome! Please read CONTRIBUTING.md for guidelines.
 ---
 
 **Built for investigative journalists, policy researchers, and transparency advocates**
+
+# Corruption Tracker Pro 🏛️
+
+Advanced Government Transparency Platform with AI-Powered Analytics
+
+## ✨ New Features
+- Zero console errors - completely stable
+- Sample data generation (50+ corruption cases)
+- Interactive filtering and charts
+- CSV export functionality
+- Mobile responsive design
+
+## 🚀 [View Live Demo](https://th4449.github.io/Local-Corruption-Tracker)
