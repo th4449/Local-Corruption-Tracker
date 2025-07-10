@@ -6,6 +6,56 @@
     <title>Corruption Tracker Pro - Government Transparency Platform</title>
     
     <style>
+ <style>
+/* Your existing styles... */
+
+/* Newsletter Layout Improvements */
+.newsletter-builder > div:first-child {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 25px;
+}
+
+.newsletter-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 20px;
+    align-items: start;
+    width: 100%;
+}
+
+.newsletter-item {
+    padding: 16px;
+    margin-bottom: 0;
+    break-inside: avoid;
+}
+
+/* Responsive layout */
+@media (min-width: 1600px) {
+    .newsletter-content {
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 25px;
+    }
+}
+
+@media (min-width: 2000px) {
+    .newsletter-content {
+        grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    }
+}
+
+@media (max-width: 1200px) {
+    .newsletter-builder > div:first-child {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .newsletter-content {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
         :root {
             --primary-color: #3498db;
             --secondary-color: #2c3e50;
