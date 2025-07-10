@@ -1886,62 +1886,39 @@
             },
             
             updateAnalytics: function() {
-                try {
-                    var analyticsEl = document.getElementById('analyticsInsights');
-                    if (!analyticsEl || this.stories.length === 0) return;
+    try {
+        var analyticsEl = document.getElementById('analyticsInsights');
+        if (!analyticsEl || this.stories.length === 0) return;
 
-                    var insights = [];
-                    var highRiskCount = 0;
-                    var totalAmount = 0;
-                    var govSourceCount = 0;
-                    var watchdogCount = 0;
-                    var investigativeCount = 0;
-                    var localSourceCount = 0;
-                    
-                    // Analyze sources by category
-                    var sourceCounts = {
-                        'Federal': 0,
-                        'Major News': 0,
-                        'Watchdog': 0,
-                        'Investigative': 0,
-                        'Local': 0,
-                        'Other': 0
-                    };
-                    
-                    for (var i = 0; i < this.stories.length; i++) {
-                        var story = this.stories[i];
-                        
-                        if (story.severity === 'HIGH') highRiskCount++;
-                        if (story.amount) totalAmount += story.amount;
-                        
-                        // Categorize sources
-                        var source = story.source || '';
-                        if (source.includes('DOJ') || source.includes('FBI') || source.includes('SEC') || source.includes('gov')) {
-                            govSourceCount++;
-                            sourceCounts['Federal']++;
-                        } else if (source.includes('CREW') || source.includes('Whistleblower') || source.includes('Transparency')) {
-                            watchdogCount++;
-                            sourceCounts['Watchdog']++;
-                        } else if (source.includes('404 Media') || source.includes('Global Investigations') || source.includes('Observer')) {
-                            investigativeCount++;
-                            sourceCounts['Investigative']++;
-                        } else if (source.includes('Tribune') || source.includes('Times') || source.includes('Herald') || source.includes('Mirror')) {
-                            localSourceCount++;
-                            sourceCounts['Local']++;
-                        } else if (source.includes('ABC') || source.includes('CBS') || source.includes('NBC') || source.includes('NY Times') || source.includes('Reuters')) {
-                            sourceCounts['Major News']++;
-                        } else {
-                            sourceCounts['Other']++;
-                        }
-                    }
+        var insights = [];
+        var highRiskCount = 0;
+        var totalAmount = 0;
+        var govSourceCount = 0;
+        
+        for (var i = 0; i < this.stories.length; i++) {
+            var story = this.stories[i];
+            
+            if (story.severity === 'HIGH') highRiskCount++;
+            if (story.amount) totalAmount += story.amount;
+            
+            var source = story.source || '';
+            if (source.includes('DOJ') || source.includes('FBI') || source.includes('gov')) {
+                govSourceCount++;
+            }
+        }
 
-                    // Calculate diversity metrics
-                    var uniqueSources = new Set(this.stories.map(s => s.source)).size;
-                    var avgRisk = this.stories.reduce(function(sum, s) { return sum + s.riskScore; }, 0) / this.stories.length;
-                    
-                    // Generate insights
-                    insights.push('🔍 ' + highRiskCount + ' high-risk cases identified through AI analysis across 150+ sources');
-                    insights.push('💰 Total financial impact tracked: 
+        insights.push('🔍 ' + highRiskCount + ' high-risk cases identified');
+        insights.push('💰 Total financial impact: $' + totalAmount.toLocaleString());
+        insights.push('🏛️ ' + govSourceCount + ' cases from government sources');
+        insights.push('📊 Average risk score: ' + Math.round(this.stories.reduce(function(sum, s) { return sum + s.riskScore; }, 0) / this.stories.length));
+
+        analyticsEl.innerHTML = insights.map(function(insight) {
+            return '<p style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 8px;">' + insight + '</p>';
+        }).join('');
+    } catch (e) {
+        console.error('Analytics update error:', e);
+    }
+},
             
             refreshDisplay: function() {
                 try {
