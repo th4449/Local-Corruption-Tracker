@@ -3,19 +3,363 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corruption Tracker Pro - Government Transparency Platform</title>
+    <title>Corruption Tracker Pro - Advanced Government Transparency Platform</title>
     
-<style>
-    <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corruption Tracker Pro</title>
+    <!-- External Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dexie/3.2.4/dexie.min.js"></script>
     
     <style>
-        /* ALL CSS GOES HERE - INSIDE THESE STYLE TAGS */
-       
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --dark-bg: #1a1a2e;
+            --medium-bg: #16213e;
+            --light-bg: #0f3460;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-radius: 20px;
+            --shadow-light: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --shadow-heavy: 0 25px 50px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--medium-bg) 50%, var(--light-bg) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: var(--border-radius);
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-heavy);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-color), var(--warning-color), #f1c40f, var(--success-color), var(--primary-color), #9b59b6);
+        }
+
+        .header h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            background: linear-gradient(135deg, var(--secondary-color), #34495e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            background: var(--glass-bg);
+            border-radius: var(--border-radius);
+            padding: 5px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-light);
+            overflow-x: auto;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px 20px;
+            border: none;
+            background: transparent;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            color: white;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .tab:hover:not(.active) {
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .controls {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            box-shadow: var(--shadow-light);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, var(--accent-color), #c0392b);
+        }
+
+        .btn.primary:hover {
+            box-shadow: 0 15px 25px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn.success {
+            background: linear-gradient(135deg, var(--success-color), #229954);
+        }
+
+        .btn.warning {
+            background: linear-gradient(135deg, var(--warning-color), #e67e22);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .filter-select {
+            background: white;
+            border: 2px solid #ecf0f1;
+            padding: 12px 18px;
+            border-radius: 25px;
+            outline: none;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+
+        .filter-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow-heavy);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), #2980b9);
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 35px 70px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            color: var(--secondary-color);
+            margin-bottom: 25px;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #ecf0f1;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 25px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #fadbd8, #f1948a);
+            color: #c0392b;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 4px solid var(--danger-color);
+            font-weight: 600;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #d5f4e6, #a9dfbf);
+            color: var(--success-color);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 4px solid var(--success-color);
+            font-weight: 600;
+        }
+
+        .newsletter-builder {
+            background: var(--glass-bg);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: var(--shadow-heavy);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .newsletter-builder::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #e67e22, #d35400);
+        }
+
+        .newsletter-content {
+            border: 3px dashed #bdc3c7;
+            border-radius: 15px;
+            padding: 30px;
+            min-height: 250px;
+            margin-bottom: 25px;
+            transition: var(--transition);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            align-items: start;
+        }
+
+        .newsletter-content.dragover {
+            border-color: var(--primary-color);
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .newsletter-item {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 0;
+            border-left: 4px solid var(--primary-color);
+            transition: var(--transition);
+            break-inside: avoid;
+        }
+
+        .newsletter-item:hover {
+            transform: translateX(5px);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .newsletter-content {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .newsletter-content {
+                grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+                gap: 25px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -23,32 +367,12 @@
         <!-- Header -->
         <div class="header">
             <h1>🏛 Corruption Tracker Pro</h1>
-            <p>Advanced Government Transparency Platform with Real-Time Monitoring</p>
-            <div class="header-stats">
-                <div class="header-stat">
-                    <div class="header-stat-number" id="headerTotalSources">150+</div>
-                    <div class="header-stat-label">RSS Feeds + APIs</div>
-                </div>
-                <div class="header-stat">
-                    <div class="header-stat-number" id="headerStoriesCount">0</div>
-                    <div class="header-stat-label">Stories Tracked</div>
-                </div>
-                <div class="header-stat">
-                    <div class="header-stat-number" id="headerStatesCount">50</div>
-                    <div class="header-stat-label">States Covered</div>
-                </div>
-                <div class="header-stat">
-                    <div class="header-stat-number" id="headerLastUpdate">Ready</div>
-                    <div class="header-stat-label">Status</div>
-                </div>
-            </div>
+            <p>Advanced Government Transparency Platform with AI-Powered Analytics & Real-Time Monitoring</p>
         </div>
 
         <!-- Tabs -->
         <div class="tabs">
             <button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
-            <button class="tab" onclick="showTab('analytics')">🔍 Analytics</button>
-            <button class="tab" onclick="showTab('api-status')">📡 API Status</button>
             <button class="tab" onclick="showTab('newsletter')">📧 Newsletter</button>
             <button class="tab" onclick="showTab('settings')">⚙️ Settings</button>
         </div>
@@ -56,2800 +380,384 @@
         <!-- Dashboard Tab -->
         <div id="dashboard" class="tab-content active">
             <div class="controls">
-                <button id="pullBtn" class="btn primary">🔄 Load Real Data</button>
-                <select id="stateFilter" class="filter-select">
-                    <option value="*">All States</option>
-                </select>
-                <select id="severityFilter" class="filter-select">
-                    <option value="*">All Severity</option>
-                    <option value="HIGH">🔴 High Risk</option>
-                    <option value="MEDIUM">🟡 Medium Risk</option>
-                    <option value="LOW">🟢 Low Risk</option>
-                </select>
-                <button class="btn" onclick="loadSampleData()">📊 Load Sample</button>
+                <button id="pullBtn" class="btn primary">🔄 Pull All Data Sources</button>
+                <button class="btn success" onclick="loadSampleData()">📊 Load Sample Data</button>
                 <button class="btn" onclick="exportData()">📤 Export Data</button>
             </div>
 
-            <!-- Stats Grid -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalStories">0</div>
-                    <div class="stat-label">Total Cases</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="statesCovered">0</div>
-                    <div class="stat-label">States Covered</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="avgAmount">$0</div>
-                    <div class="stat-label">Avg Financial Impact</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="highSeverity">0</div>
-                    <div class="stat-label">High Risk Cases</div>
-                </div>
-            </div>
-
-            <!-- Dashboard Grid -->
-            <div class="dashboard-grid">
-                <div class="card">
-                    <h2>📈 Corruption Trends</h2>
-                    <div class="chart-container">
-                        <div class="simple-chart" id="trendsChart">
-                            <div style="text-align: center; color: #7f8c8d;">
-                                Load data to see trends
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h2>🗺 Geographic Distribution</h2>
-                    <div class="chart-container">
-                        <div class="simple-chart" id="geoChart">
-                            <div style="text-align: center; color: #7f8c8d;">
-                                Load data to see distribution
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Stories List -->
             <div class="card">
-                <h2>📰 Corruption Stories</h2>
+                <h2>📰 Live Corruption Stories</h2>
                 <div id="storiesList">
                     <div class="loading">
                         <div class="spinner"></div>
-                        <p>Click "Load Real Data" to fetch from government APIs and RSS feeds...</p>
+                        <p>Click "Load Sample Data" to test the dashboard...</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Analytics Tab -->
-        <div id="analytics" class="tab-content">
-            <div class="card">
-                <h2>🔍 Advanced Analytics</h2>
-                <div style="padding: 40px; text-align: center;">
-                    <h3>🤖 AI-Powered Pattern Analysis</h3>
-                    <p>Machine learning algorithms analyze corruption patterns and provide insights.</p>
-                    <div style="margin: 20px 0;">
-                        <div style="background: #ecf0f1; border-radius: 10px; padding: 10px;">
-                            <div style="background: #27ae60; height: 8px; border-radius: 4px; width: 87%;"></div>
-                            <small>Pattern Detection Accuracy: 87%</small>
+        <!-- Newsletter Tab -->
+        <div id="newsletter" class="tab-content">
+            <div class="newsletter-builder">
+                <h2>📧 Professional Newsletter Builder</h2>
+                <div style="display: grid; grid-template-columns: 1fr 300px; gap: 30px;">
+                    <div>
+                        <div class="newsletter-content" id="newsletterContent">
+                            <p style="grid-column: 1 / -1; text-align: center; color: #7f8c8d; font-size: 1.1rem;">
+                                🎯 Drag corruption stories here to build your newsletter<br>
+                                <small>Or click "Add Sample Content" to test</small>
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <button class="btn" onclick="addSampleContent()">📝 ADD SAMPLE CONTENT</button>
+                            <button class="btn" onclick="exportNewsletter('html')">📄 EXPORT HTML</button>
+                            <button class="btn" onclick="exportNewsletter('pdf')">📋 EXPORT PDF</button>
+                            <button class="btn warning" onclick="clearNewsletter()">🗑 CLEAR ALL</button>
                         </div>
                     </div>
-                    <div style="margin-top: 30px;">
-                        <h4>🎯 Key Insights</h4>
-                        <div id="analyticsInsights">
-                            <p style="color: #7f8c8d; margin: 10px 0;">Load data to generate AI insights...</p>
+                    <div>
+                        <h3>📋 Newsletter Templates</h3>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <button class="btn" onclick="loadTemplate('weekly')">📅 WEEKLY ROUNDUP</button>
+                            <button class="btn" onclick="loadTemplate('breaking')">⚡ BREAKING NEWS</button>
+                            <button class="btn" onclick="loadTemplate('analysis')">📊 MONTHLY SUMMARY</button>
+                        </div>
+                        <h3 style="margin-top: 25px;">🎨 Customization</h3>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <input type="text" placeholder="Newsletter Title" id="newsletterTitle" class="filter-select">
+                            <input type="text" placeholder="Author Name" id="authorName" class="filter-select">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- API Status Tab -->
-        <div id="api-status" class="tab-content">
-            <div class="card">
-                <h2>📡 Data Sources Status</h2>
-                <div id="apiStatusContainer">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Checking API connections...</p>
-                    </div>
-                </div>
-                <div style="margin-top: 20px;">
-                    <button class="btn" onclick="checkAllAPIs()">🔄 Refresh Status</button>
-                </div>
-            </div>
-        </div>
-
-<!-- Newsletter Tab -->
-<div id="newsletter" class="tab-content">
-    <div class="card">
-        <h2>📧 Newsletter Builder</h2>
-        <p>Create professional corruption newsletters by dragging stories from the Dashboard.</p>
-        
-        <div style="display: grid; grid-template-columns: 1fr 300px; gap: 30px; margin: 20px 0;">
-            <div>
-                <h3>📝 Newsletter Content</h3>
-                <div id="newsletterContent" style="border: 3px dashed #bdc3c7; border-radius: 15px; padding: 30px; min-height: 250px; margin-bottom: 25px;">
-                    <p style="color: #7f8c8d; text-align: center; font-size: 1.1rem;">
-                        🎯 Drag corruption stories here from the Dashboard tab<br>
-                        <small>Or click "Add Sample Content" to test</small>
-                    </p>
-                </div>
-                
-                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                    <button class="btn" onclick="addSampleContent()">📝 Add Sample Content</button>
-                    <button class="btn" onclick="exportNewsletter('html')">📄 Export HTML</button>
-                    <button class="btn" onclick="exportNewsletter('pdf')">📋 Export PDF</button>
-                    <button class="btn" onclick="clearNewsletter()">🗑 Clear All</button>
-                </div>
-            </div>
-            
-            <div>
-                <h3>🎨 Newsletter Settings</h3>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <input type="text" placeholder="Newsletter Title" id="newsletterTitle" class="filter-select" value="Local Corruption Report">
-                    <input type="text" placeholder="Author Name" id="authorName" class="filter-select" value="Corruption Tracker">
-                    <select id="newsletterTheme" class="filter-select">
-                        <option value="professional">Professional</option>
-                        <option value="investigative">Investigative</option>
-                        <option value="government">Government</option>
-                    </select>
-                </div>
-                
-                <h3 style="margin-top: 25px;">📋 Quick Templates</h3>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <button class="btn" onclick="loadTemplate('weekly')">📅 Weekly Roundup</button>
-                    <button class="btn" onclick="loadTemplate('breaking')">⚡ Breaking News</button>
-                    <button class="btn" onclick="loadTemplate('summary')">📊 Monthly Summary</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
         <!-- Settings Tab -->
         <div id="settings" class="tab-content">
             <div class="card">
-                <h2>⚙️ System Settings</h2>
-                <div style="padding: 20px;">
-                    <h3>🔑 API Configuration</h3>
-                    <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 10px;">
-                        <div style="display: flex; justify-content: space-between; margin: 5px 0;">
-                            <span>Data.gov API:</span>
-                            <span style="color: #27ae60; font-weight: bold;">✅ Configured</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin: 5px 0;">
-                            <span>RSS Feeds:</span>
-                            <span style="color: #27ae60; font-weight: bold;">✅ Active</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin: 5px 0;">
-                            <span>CORS Proxy:</span>
-                            <span style="color: #27ae60; font-weight: bold;">✅ Available</span>
-                        </div>
-                    </div>
-                    
-                    <h3>📊 Dashboard Configuration</h3>
-                    <div style="margin: 20px 0;">
-                        <label style="display: block; margin-bottom: 10px;">Auto-refresh interval:</label>
-                        <select class="filter-select">
-                            <option value="300000">5 minutes</option>
-                            <option value="900000">15 minutes</option>
-                            <option value="3600000">1 hour</option>
-                        </select>
-                    </div>
-                    
-                    <h3 style="margin-top: 30px;">🔔 Alerts & Notifications</h3>
-                    <div style="margin: 20px 0;">
-                        <label style="display: flex; align-items: center; margin: 10px 0;">
-                            <input type="checkbox" checked style="margin-right: 10px;">
-                            High-risk corruption alerts
-                        </label>
-                        <label style="display: flex; align-items: center; margin: 10px 0;">
-                            <input type="checkbox" style="margin-right: 10px;">
-                            Weekly summary reports
-                        </label>
-                    </div>
-                    
-                    <h3 style="margin-top: 30px;">📈 System Status</h3>
-                    <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 10px;">
-                        <div style="display: flex; justify-content: space-between; margin: 5px 0;">
-                            <span>System Status:</span>
-                            <span style="color: #27ae60; font-weight: bold;">✅ Online</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin: 5px 0;">
-                            <span>Last Update:</span>
-                            <span id="lastUpdateTime">Ready</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin: 5px 0;">
-                            <span>Performance:</span>
-                            <span style="color: #27ae60; font-weight: bold;">Excellent</span>
-                        </div>
-                    </div>
-                </div>
+                <h2>⚙️ System Configuration</h2>
+                <p>Dashboard settings and configuration options will be available here.</p>
             </div>
         </div>
     </div>
 
+    <!-- JavaScript -->
     <script>
-        // API Configuration with your data.gov key
-        const API_KEYS = {
-            dataGov: 'VzjEGjHG9Ji0MbG9gTgGWI74bVbgzptM9gKDiFiP',
-            // Add other API keys as needed
-            newsapi: '', // Optional
-            propublica: '', // Optional
-        };
-
-        // Comprehensive RSS Feeds Configuration - 150+ Sources
-        const RSS_FEEDS = {
-            federal: [
-                'https://www.justice.gov/rss.xml',
-                'https://www.sec.gov/news/speeches.rss',
-                'https://www.fbi.gov/news/pressrel/rss.xml',
-                'https://oig.justice.gov/rss.xml',
-                'https://www.gao.gov/feeds/press-releases.xml',
-                'https://news.delaware.gov/feed/',
-                'https://www.courtlistener.com/api/rest/v4/dockets/',
-                'https://www.courtlistener.com/api/rest/v4/recap-fetch/',
-                'https://www.courtlistener.com/docket/69661712/feed/'
-            ],
-            major_news: [
-                'http://feeds.abcnews.com/abcnews/usheadlines',
-                'http://www.cbsnews.com/latest/rss/main',
-                'https://www.cbsnews.com/latest/rss/us',
-                'https://www.cbsnews.com/latest/rss/politics',
-                'http://feeds.nbcnews.com/feeds/topstories',
-                'https://www.nbcdfw.com/news/feed/',
-                'https://www.nbcchicago.com/?rss=y',
-                'https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml',
-                'https://rss.nytimes.com/services/xml/rss/nyt/US.xml',
-                'http://feeds.reuters.com/Reuters/worldNews',
-                'https://feeds.bbci.co.uk/news/world/us_and_canada/rss.xml',
-                'http://rss.csmonitor.com/feeds/usa',
-                'http://www.npr.org/rss/rss.php?id=1001',
-                'http://rsshub.app/apnews/topics/apf-topnews',
-                'https://rss2.feedspot.com/https://apnews.com/hub/politics',
-                'http://www.theguardian.com/world/usa/rss',
-                'http://news.yahoo.com/rss/us'
-            ],
-            watchdog: [
-                'https://www.citizensforethics.org/feed/',
-                'https://whistleblower.org/feed/',
-                'https://www.spotlightpa.org/feeds/full.xml',
-                'https://www.transparency.org/en/countries/united-states',
-                'https://www.globalinvestigations.blog/',
-                'http://www.commoncausewisconsin.org/feeds/posts/default?alt=rss',
-                'https://www.publishedreporter.com/feed/'
-            ],
-            investigative: [
-                'https://www.404media.co/rss/',
-                'https://www.theaustinbulldog.org/',
-                'https://www.thecontributor.org/',
-                'https://9thstreetjournal.org/',
-                'https://www.applegater.org/',
-                'https://signalakron.org/feed/',
-                'https://thepulp.org/',
-                'https://www.redandblack.com/',
-                'https://sgfcitizen.org/'
-            ],
-            local_major: [
-                'https://www.chicagotribune.com/feed/',
-                'https://chicago.suntimes.com/rss/index.xml',
-                'https://www.chicagoreader.com/chicago/Rss.xml',
-                'https://www.dallasnews.com/arcio/rss/category/news/',
-                'https://www.seattletimes.com/feed/',
-                'https://www.boston.com/feed/',
-                'https://www.denverpost.com/feed/',
-                'https://www.miamiherald.com/',
-                'https://www.sacbee.com/',
-                'https://www.mercurynews.com/feed/',
-                'http://www.baltimoresun.com/rss2.0.xml',
-                'https://www.pennlive.com/arc/outboundfeeds/rss/?outputType=xml',
-                'https://www.phillyvoice.com/feed/',
-                'https://www.twincities.com/feed/',
-                'https://www.al.com/arc/outboundfeeds/rss/?outputType=xml'
-            ],
-            local_regional: [
-                'https://billypenn.com/feed/',
-                'https://gothamist.com/feed',
-                'https://ctmirror.org/feed/',
-                'https://ohiocapitaljournal.com/feed/',
-                'https://www.texasobserver.org/feed/',
-                'https://www.texastribune.org',
-                'https://richmondside.org/',
-                'https://oaklandside.org/',
-                'https://citylimits.org/feed/',
-                'https://hiddencityphila.org/feed/',
-                'http://www.civilbeat.org/feed/',
-                'https://www.psrmemphis.org/',
-                'https://isthmus.com/api/rss/content.rss',
-                'https://localnewsmatters.org/feed/',
-                'https://www.minnpost.com/feed/',
-                'https://www.montgomeryadvertiser.com/',
-                'https://outside.in/',
-                'https://patch.com/',
-                'http://www.foothillsforum.org/',
-                'http://www.riverfronttimes.com/stlouis/Rss.xml',
-                'https://www.sanantonioreport.org/',
-                'https://placeblogger.com/'
-            ],
-            local_specialized: [
-                'https://www.tucsonsentinel.com/site/rss/',
-                'https://www.alreporter.com/feed/',
-                'https://armchairlehighvalley.substack.com/feed',
-                'https://reporternewspapers.net/feed/',
-                'https://www.bpr.org/index.rss',
-                'https://borderbelt.org/feed/',
-                'https://www.thecallnews.com/',
-                'https://eastlansinginfo.news/feed/',
-                'https://elpasomatters.org/feed/',
-                'https://www.cullmantribune.com/feed/',
-                'https://www.dailyherald.com/rss/feed/?feed=news_top5',
-                'https://www.governing.com/index.rss',
-                'https://heartlandnewsfeed.com/feed/',
-                'https://www.kansascity.com/',
-                'https://thecurrentla.com/',
-                'https://theinvadingsea.com/',
-                'https://www.kansascitydefender.com/',
-                'https://www.thelensnola.org/',
-                'https://macon-newsroom.com/',
-                'http://timesofsandiego.com/feed/',
-                'https://tonemadison.com/',
-                'https://www.wintergardenvox.com/',
-                'https://www.washcountynews.com/',
-                'https://wausaupilotandreview.com/',
-                'https://www.wfae.org/',
-                'https://whdh.com/feed/',
-                'https://www.witf.org/',
-                'theflintcouriernews.com/feed'
-            ],
-            specialized_feeds: [
-                'https://dfpi.ca.gov/consumers/crypto/crypto-scam-tracker/',
-                'https://us11.campaign-archive.com/feed?u=e56e9828a85a66845e18ee97f&id=130dcfd37b',
-                'https://com-courtlistener-storage.s3-us-west-2.amazonaws.com/list.html?prefix=bulk-data/',
-                'https://api.micourt.courts.michigan.gov/case-product/v4/{courtKey}/casetypes/{code}',
-                'https://www.stltoday.com/search/?q=&d1=&d2=&s=start_time&sd=desc&c=news%2Flocal%2Fcrime-courts&l=50&f=rss&t=article,link,html,collection'
-            ],
-            google_alerts: [
-                'https://www.google.com/alerts/feeds/03551752338926516940/10073124383763109108',
-                'https://www.google.com/alerts/feeds/03551752338926516940/10547764517950820341',
-                'https://www.google.com/alerts/feeds/03551752338926516940/17024747616041553006'
-            ]
-        };
-
-        // CORS Proxy Services
-        const CORS_PROXIES = [
-            'https://api.allorigins.win/raw?url=',
-            'https://corsproxy.io/?'
-        ];
-
-        // Data.gov API Manager
-        class DataGovAPIManager {
-            constructor() {
-                this.baseUrl = 'https://api.data.gov/ed/collegescorecard/v1/schools';
-                this.apiKey = API_KEYS.dataGov;
-                this.endpoints = {
-                    procurement: 'https://api.usaspending.gov/api/v2/search/spending_by_category/',
-                    contracts: 'https://api.data.gov/gsa/fbo/',
-                    grants: 'https://api.data.gov/gsa/grants/',
-                    spending: 'https://api.usaspending.gov/api/v2/search/spending_by_geography/'
-                };
-            }
-
-            async fetchCorruptionData() {
-                console.log('🏛️ Fetching data from Data.gov APIs...');
-                const stories = [];
-
-                try {
-                    // Fetch USASpending data for unusual contract patterns
-                    const spendingData = await this.fetchUSASpending();
-                    stories.push(...spendingData);
-
-                    // Fetch procurement data for potential fraud indicators
-                    const procurementData = await this.fetchProcurementData();
-                    stories.push(...procurementData);
-
-                    console.log(`✅ Data.gov: Retrieved ${stories.length} potential corruption indicators`);
-                    return stories;
-
-                } catch (error) {
-                    console.warn('Data.gov API error:', error);
-                    return [];
-                }
-            }
-
-            async fetchUSASpending() {
-                try {
-                    const url = 'https://api.usaspending.gov/api/v2/search/spending_by_category/';
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            category: 'awarding_agency',
-                            filters: {
-                                time_period: [
-                                    {
-                                        start_date: '2023-01-01',
-                                        end_date: '2024-12-31'
-                                    }
-                                ]
-                            },
-                            limit: 50
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`USASpending API error: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    return this.parseUSASpendingData(data);
-
-                } catch (error) {
-                    console.warn('USASpending fetch error:', error);
-                    return [];
-                }
-            }
-
-            async fetchProcurementData() {
-                // Note: Many federal APIs require additional authentication
-                // This is a simplified example that would need proper endpoint configuration
-                try {
-                    const stories = [];
-                    
-                    // Generate sample government data based on real patterns
-                    const sampleGovData = [
-                        {
-                            headline: "Unusual Federal Contract Pattern Detected in $2.8M Award",
-                            summary: "Data.gov analysis reveals potential irregularities in federal procurement process with single-bidder contracts exceeding normal thresholds.",
-                            state: "DC",
-                            type: "contract",
-                            subtype: "procurement",
-                            amount: 2800000,
-                            severity: "MEDIUM",
-                            source: "USASpending.gov",
-                            flags: ["singleBid", "highValue", "rapidAward"]
-                        },
-                        {
-                            headline: "Federal Grant Oversight: $1.2M Emergency Award Under Review",
-                            summary: "Emergency procurement procedures bypassed normal competitive bidding for technology services contract, triggering automated oversight review.",
-                            state: "VA",
-                            type: "contract",
-                            subtype: "emergency",
-                            amount: 1200000,
-                            severity: "HIGH",
-                            source: "Data.gov",
-                            flags: ["emergencyContract", "noBid", "expedited"]
-                        }
-                    ];
-
-                    return sampleGovData.map(item => this.createFeedItem(item));
-
-                } catch (error) {
-                    console.warn('Procurement data fetch error:', error);
-                    return [];
-                }
-            }
-
-            parseUSASpendingData(data) {
-                const stories = [];
-                
-                if (data.results) {
-                    data.results.forEach(result => {
-                        // Look for unusual spending patterns that could indicate corruption
-                        if (result.amount && result.amount > 1000000) {
-                            stories.push(this.createFeedItem({
-                                headline: `Large Federal Award: $${(result.amount / 1000000).toFixed(1)}M to ${result.name || 'Unknown Entity'}`,
-                                summary: `Federal spending data shows significant award requiring oversight review. Agency: ${result.name || 'Unknown'}`,
-                                state: this.extractStateFromAgency(result.name),
-                                type: "contract",
-                                subtype: "federal_spending",
-                                amount: result.amount,
-                                severity: result.amount > 10000000 ? "HIGH" : "MEDIUM",
-                                source: "USASpending.gov",
-                                flags: result.amount > 5000000 ? ["highValue", "oversight"] : ["oversight"]
-                            }));
-                        }
-                    });
-                }
-
-                return stories;
-            }
-
-            extractStateFromAgency(agencyName) {
-                if (!agencyName) return null;
-                
-                // Simple state extraction from agency names
-                const statePattern = /\b([A-Z]{2})\b/;
-                const match = agencyName.match(statePattern);
-                return match ? match[1] : 'DC'; // Default to DC for federal
-            }
-
-            createFeedItem(data) {
-                return {
-                    id: this.generateId(data.headline, new Date().toISOString()),
-                    headline: data.headline,
-                    url: `https://usaspending.gov/search/${encodeURIComponent(data.headline)}`,
-                    summary: data.summary,
-                    date: new Date().toISOString(),
-                    state: data.state,
-                    type: data.type || 'contract',
-                    subtype: data.subtype || 'government',
-                    amount: data.amount,
-                    parties: [],
-                    flags: data.flags || [],
-                    severity: data.severity || 'MEDIUM',
-                    entities: { persons: [], organizations: [], amounts: [data.amount] },
-                    source: data.source || 'Data.gov',
-                    riskScore: this.calculateRiskScore(data)
-                };
-            }
-
-            calculateRiskScore(data) {
-                let score = 0;
-                if (data.severity === 'HIGH') score += 40;
-                else if (data.severity === 'MEDIUM') score += 25;
-                else score += 10;
-
-                if (data.amount > 10000000) score += 30;
-                else if (data.amount > 1000000) score += 20;
-                else if (data.amount > 100000) score += 10;
-
-                score += (data.flags?.length || 0) * 5;
-                return Math.min(score, 100);
-            }
-
-            generateId(text, date) {
-                return btoa((text + date + Math.random())).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
-            }
-        }
-
-        // RSS Feed Manager
-        class RSSFeedManager {
-            constructor() {
-                this.currentProxyIndex = 0;
-                this.maxRetries = 2;
-            }
-
-            async fetchAllFeeds() {
-                console.log('📰 Fetching from 150+ RSS feeds...');
-                
-                // Combine all feed categories
-                const allFeeds = [
-                    ...RSS_FEEDS.federal,
-                    ...RSS_FEEDS.major_news,
-                    ...RSS_FEEDS.watchdog,
-                    ...RSS_FEEDS.investigative,
-                    ...RSS_FEEDS.local_major,
-                    ...RSS_FEEDS.local_regional,
-                    ...RSS_FEEDS.local_specialized,
-                    ...RSS_FEEDS.specialized_feeds,
-                    ...RSS_FEEDS.google_alerts
-                ];
-
-                console.log(`🔄 Processing ${allFeeds.length} total feeds across all categories`);
-
-                const stories = [];
-                const batchSize = 4; // Smaller batches for better reliability with many feeds
-                const maxFeeds = 60; // Limit to prevent timeout, prioritize most important feeds
-                
-                // Prioritize feeds by importance
-                const prioritizedFeeds = [
-                    ...RSS_FEEDS.federal,           // Highest priority - government sources
-                    ...RSS_FEEDS.watchdog,          // High priority - watchdog organizations  
-                    ...RSS_FEEDS.major_news.slice(0, 10),  // Top 10 major news sources
-                    ...RSS_FEEDS.investigative,     // Investigative journalism
-                    ...RSS_FEEDS.local_major.slice(0, 15), // Top 15 local major sources
-                    ...RSS_FEEDS.local_regional.slice(0, 15), // Top 15 regional sources
-                    ...RSS_FEEDS.google_alerts,     // Google alerts for corruption
-                    ...RSS_FEEDS.local_specialized.slice(0, 10) // Top 10 specialized sources
-                ].slice(0, maxFeeds);
-
-                console.log(`📊 Processing ${prioritizedFeeds.length} prioritized feeds`);
-
-                for (let i = 0; i < prioritizedFeeds.length; i += batchSize) {
-                    const batch = prioritizedFeeds.slice(i, i + batchSize);
-                    const batchPromises = batch.map(url => this.fetchSingleFeed(url));
-                    
-                    try {
-                        const results = await Promise.allSettled(batchPromises);
-                        let batchTotal = 0;
-                        
-                        results.forEach((result, index) => {
-                            if (result.status === 'fulfilled') {
-                                stories.push(...result.value);
-                                batchTotal += result.value.length;
-                                const feedCategory = this.identifyFeedCategory(batch[index]);
-                                console.log(`✅ ${feedCategory}: ${result.value.length} items from ${this.getFeedName(batch[index])}`);
-                            } else {
-                                console.warn(`❌ Failed: ${this.getFeedName(batch[index])}`);
-                            }
-                        });
-
-                        console.log(`📦 Batch ${Math.floor(i/batchSize) + 1}: ${batchTotal} stories collected`);
-
-                    } catch (error) {
-                        console.error('RSS batch error:', error);
-                    }
-
-                    // Progress update
-                    const progress = Math.min(((i + batchSize) / prioritizedFeeds.length) * 100, 100);
-                    this.updateProgress(`Fetching feeds... ${Math.round(progress)}% (${stories.length} stories found)`);
-                    
-                    // Delay between batches to be respectful to servers
-                    if (i + batchSize < prioritizedFeeds.length) {
-                        await this.delay(800); // Slightly longer delay for stability
-                    }
-                }
-
-                const uniqueStories = this.filterCorruptionStories(stories);
-                console.log(`🎉 RSS collection complete! ${uniqueStories.length} unique corruption stories from ${prioritizedFeeds.length} sources`);
-                
-                return uniqueStories;
-            }
-
-            async fetchSingleFeed(feedUrl) {
-                for (let attempt = 0; attempt < this.maxRetries; attempt++) {
-                    try {
-                        const proxyUrl = this.getNextProxy() + encodeURIComponent(feedUrl);
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-                        const response = await fetch(proxyUrl, {
-                            signal: controller.signal
-                        });
-
-                        clearTimeout(timeoutId);
-
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
-
-                        const xmlText = await response.text();
-                        return this.parseRSSXML(xmlText, feedUrl);
-
-                    } catch (error) {
-                        if (attempt === this.maxRetries - 1) {
-                            throw error;
-                        }
-                        await this.delay(1000);
-                    }
-                }
-            }
-
-            parseRSSXML(xmlText, sourceUrl) {
-                try {
-                    const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-                    
-                    const items = xmlDoc.querySelectorAll('item, entry');
-                    const stories = [];
-
-                    items.forEach(item => {
-                        try {
-                            const title = this.getTextContent(item, 'title');
-                            const link = this.getTextContent(item, 'link, guid');
-                            const description = this.getTextContent(item, 'description, summary, content');
-                            const pubDate = this.getTextContent(item, 'pubDate, published, updated');
-
-                            if (title && link) {
-                                const fullText = (title + ' ' + description).toLowerCase();
-                                
-                                if (this.isCorruptionRelated(fullText)) {
-                                    const cleanDesc = this.cleanHtmlContent(description);
-                                    
-                                    stories.push({
-                                        id: this.generateId(link, pubDate),
-                                        headline: title.trim(),
-                                        url: link.trim(),
-                                        summary: cleanDesc.substring(0, 500),
-                                        date: this.parseDate(pubDate),
-                                        state: this.extractState(fullText),
-                                        type: 'news',
-                                        subtype: this.classifyCorruptionType(fullText),
-                                        amount: this.extractAmount(fullText),
-                                        parties: this.extractParties(fullText),
-                                        flags: this.identifyRedFlags(fullText),
-                                        severity: this.assessSeverity(fullText),
-                                        entities: { persons: [], organizations: [], amounts: [] },
-                                        source: this.identifySource(sourceUrl),
-                                        riskScore: this.calculateRiskScore(fullText)
-                                    });
-                                }
-                            }
-                        } catch (itemError) {
-                            console.warn('RSS item parsing error:', itemError);
-                        }
-                    });
-
-                    return stories;
-
-                } catch (error) {
-                    console.error('RSS parsing error:', error);
-                    return [];
-                }
-            }
-
-            isCorruptionRelated(text) {
-                const corruptionKeywords = [
-                    // Primary corruption terms
-                    'corruption', 'bribery', 'embezzlement', 'fraud', 'kickback', 'nepotism',
-                    'conflict of interest', 'ethics violation', 'misuse of funds', 'pay-to-play',
-                    
-                    // Investigation terms
-                    'federal investigation', 'indictment', 'charges filed', 'guilty plea',
-                    'investigation', 'probe', 'whistleblower', 'audit finds', 'inspector general',
-                    
-                    // Financial crimes
-                    'money laundering', 'insider trading', 'campaign violation', 'bid rigging',
-                    'procurement fraud', 'contract irregularities', 'cost overrun', 'no-bid contract',
-                    
-                    // Official misconduct
-                    'abuse of office', 'official misconduct', 'ethics charges', 'suspended',
-                    'resigned', 'arrested', 'convicted', 'plea deal', 'sentenced',
-                    
-                    // Government accountability
-                    'public records', 'transparency', 'accountability', 'oversight failure',
-                    'government waste', 'taxpayer fraud', 'public trust', 'breach of duty',
-                    
-                    // Legal proceedings
-                    'grand jury', 'subpoena', 'search warrant', 'court filing', 'civil lawsuit',
-                    'criminal complaint', 'plea agreement', 'cooperation agreement',
-                    
-                    // Financial irregularities
-                    'unexplained wealth', 'shell company', 'offshore account', 'tax evasion',
-                    'false invoices', 'inflated contracts', 'phantom employees', 'ghost payroll',
-                    
-                    // Political corruption
-                    'political machine', 'vote buying', 'election fraud', 'ballot stuffing',
-                    'gerrymandering', 'voter suppression', 'campaign finance violation',
-                    
-                    // Local government specific
-                    'city council', 'mayor', 'sheriff', 'police chief', 'fire chief',
-                    'superintendent', 'commissioner', 'alderman', 'councilman', 'councilwoman',
-                    
-                    // Regulatory capture
-                    'regulatory capture', 'revolving door', 'industry influence', 'lobbyist',
-                    'special interest', 'political donor', 'pay for access',
-                    
-                    // Crypto and modern crimes
-                    'crypto scam', 'bitcoin fraud', 'nft scam', 'digital asset fraud',
-                    'cryptocurrency laundering', 'ransomware', 'cyber extortion'
-                ];
-
-                // Check for corruption keywords
-                const hasCorruptionKeywords = corruptionKeywords.some(keyword => text.includes(keyword.toLowerCase()));
-                
-                // Check for suspicious financial patterns
-                const hasSuspiciousFinancials = /\$[\d,]+(?:\.\d{2})?(?:\s*(?:million|billion|thousand))?/gi.test(text) &&
-                    (text.includes('missing') || text.includes('unaccounted') || text.includes('diverted') || 
-                     text.includes('stolen') || text.includes('embezzled') || text.includes('misappropriated'));
-                
-                // Check for government officials in negative context
-                const hasOfficialMisconduct = /(mayor|governor|sheriff|chief|commissioner|representative|senator|judge|councilman|superintendent|director|treasurer|clerk)/i.test(text) &&
-                    (text.includes('charged') || text.includes('arrested') || text.includes('indicted') || 
-                     text.includes('investigated') || text.includes('suspended') || text.includes('resigned'));
-                
-                return hasCorruptionKeywords || hasSuspiciousFinancials || hasOfficialMisconduct;
-            }
-
-            classifyCorruptionType(text) {
-                if (text.includes('brib') || text.includes('kickback')) return 'bribery';
-                if (text.includes('embezzl') || text.includes('misuse of funds')) return 'embezzlement';
-                if (text.includes('fraud') || text.includes('deception')) return 'fraud';
-                if (text.includes('nepotism') || text.includes('family member')) return 'nepotism';
-                if (text.includes('conflict of interest')) return 'conflicts';
-                if (text.includes('contract') || text.includes('procurement')) return 'procurement';
-                return 'general';
-            }
-
-            extractState(text) {
-                const statePatterns = {
-                    'california': 'CA', 'texas': 'TX', 'florida': 'FL', 'new york': 'NY',
-                    'pennsylvania': 'PA', 'illinois': 'IL', 'ohio': 'OH', 'georgia': 'GA',
-                    'north carolina': 'NC', 'michigan': 'MI', 'new jersey': 'NJ', 'virginia': 'VA'
-                };
-
-                for (const [stateName, code] of Object.entries(statePatterns)) {
-                    if (text.includes(stateName)) {
-                        return code;
-                    }
-                }
-                return null;
-            }
-
-            extractAmount(text) {
-                const amountRegex = /\$[\d,]+(?:\.\d{2})?(?:\s*(?:million|billion|thousand))?/gi;
-                const matches = text.match(amountRegex);
-                if (matches) {
-                    const amounts = matches.map(match => {
-                        let value = parseFloat(match.replace(/[\$,]/g, ''));
-                        if (match.toLowerCase().includes('million')) value *= 1000000;
-                        if (match.toLowerCase().includes('billion')) value *= 1000000000;
-                        if (match.toLowerCase().includes('thousand')) value *= 1000;
-                        return value;
-                    });
-                    return Math.max(...amounts);
-                }
-                return null;
-            }
-
-            extractParties(text) {
-                const parties = [];
-                const titleRegex = /(Mayor|Governor|Sheriff|Chief|Commissioner|Representative|Senator|Judge)\s+([A-Z][a-z]+)/g;
-                let match;
-                while ((match = titleRegex.exec(text)) !== null) {
-                    parties.push(match[1] + ' ' + match[2]);
-                }
-                return parties;
-            }
-
-            identifyRedFlags(text) {
-                const flags = [];
-                if (text.includes('single bid') || text.includes('sole bidder')) flags.push('singleBid');
-                if (text.includes('family') || text.includes('relative')) flags.push('familyTies');
-                if (text.includes('federal') || text.includes('fbi')) flags.push('federalInvestigation');
-                if (text.includes('emergency') || text.includes('no-bid')) flags.push('emergencyContract');
-                return flags;
-            }
-
-            assessSeverity(text) {
-                let score = 0;
-                if (text.includes('federal') || text.includes('indictment')) score += 30;
-                if (text.includes('fbi') || text.includes('arrest')) score += 25;
-                if (text.includes('investigation')) score += 10;
-
-                if (score >= 25) return 'HIGH';
-                if (score >= 10) return 'MEDIUM';
-                return 'LOW';
-            }
-
-            calculateRiskScore(text) {
-                let score = 0;
-                if (text.includes('federal')) score += 20;
-                if (text.includes('indictment')) score += 25;
-                if (text.includes('million')) score += 15;
-                if (text.includes('billion')) score += 30;
-                return Math.min(score, 100);
-            }
-
-            // Helper methods
-            getTextContent(element, selectors) {
-                const selectorArray = selectors.split(',').map(s => s.trim());
-                for (const selector of selectorArray) {
-                    const found = element.querySelector(selector);
-                    if (found) {
-                        return found.textContent || found.getAttribute('href') || '';
-                    }
-                }
-                return '';
-            }
-
-            cleanHtmlContent(html) {
-                const div = document.createElement('div');
-                div.innerHTML = html;
-                return div.textContent || div.innerText || '';
-            }
-
-            parseDate(dateString) {
-                if (!dateString) return new Date().toISOString();
-                try {
-                    return new Date(dateString).toISOString();
-                } catch (e) {
-                    return new Date().toISOString();
-                }
-            }
-
-            identifySource(url) {
-                if (url.includes('justice.gov')) return 'DOJ';
-                if (url.includes('fbi.gov')) return 'FBI';
-                if (url.includes('sec.gov')) return 'SEC';
-                if (url.includes('abcnews.com')) return 'ABC News';
-                if (url.includes('cbsnews.com')) return 'CBS News';
-                if (url.includes('nbcnews.com') || url.includes('nbcdfw.com') || url.includes('nbcchicago.com')) return 'NBC News';
-                if (url.includes('nytimes.com')) return 'NY Times';
-                if (url.includes('reuters.com')) return 'Reuters';
-                if (url.includes('bbc.co.uk')) return 'BBC';
-                if (url.includes('theguardian.com')) return 'The Guardian';
-                if (url.includes('citizensforethics.org')) return 'CREW';
-                if (url.includes('whistleblower.org')) return 'Whistleblower.org';
-                if (url.includes('spotlightpa.org')) return 'Spotlight PA';
-                if (url.includes('transparency.org')) return 'Transparency Intl';
-                if (url.includes('chicagotribune.com')) return 'Chicago Tribune';
-                if (url.includes('dallasnews.com')) return 'Dallas News';
-                if (url.includes('seattletimes.com')) return 'Seattle Times';
-                if (url.includes('texasobserver.org')) return 'Texas Observer';
-                if (url.includes('ctmirror.org')) return 'CT Mirror';
-                if (url.includes('ohiocapitaljournal.com')) return 'Ohio Capital Journal';
-                if (url.includes('google.com/alerts')) return 'Google Alerts';
-                if (url.includes('courtlistener.com')) return 'Court Listener';
-                if (url.includes('404media.co')) return '404 Media';
-                if (url.includes('globalinvestigations.blog')) return 'Global Investigations';
-                return 'News Source';
-            }
-
-            identifyFeedCategory(url) {
-                if (RSS_FEEDS.federal.includes(url)) return '🏛️ Federal';
-                if (RSS_FEEDS.major_news.includes(url)) return '📺 Major News';
-                if (RSS_FEEDS.watchdog.includes(url)) return '👁️ Watchdog';
-                if (RSS_FEEDS.investigative.includes(url)) return '🔍 Investigative';
-                if (RSS_FEEDS.local_major.includes(url)) return '🏙️ Local Major';
-                if (RSS_FEEDS.local_regional.includes(url)) return '📍 Regional';
-                if (RSS_FEEDS.local_specialized.includes(url)) return '🎯 Specialized';
-                if (RSS_FEEDS.google_alerts.includes(url)) return '🚨 Google Alerts';
-                if (RSS_FEEDS.specialized_feeds.includes(url)) return '⚙️ Special Feeds';
-                return '📰 General';
-            }
-
-            getFeedName(url) {
-                // Extract readable name from URL
-                try {
-                    const hostname = new URL(url).hostname.replace('www.', '');
-                    return hostname.split('.')[0].charAt(0).toUpperCase() + hostname.split('.')[0].slice(1);
-                } catch (e) {
-                    return url.substring(0, 30) + '...';
-                }
-            }
-
-            generateId(url, date) {
-                return btoa((url + date + Math.random())).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
-            }
-
-            getNextProxy() {
-                const proxy = CORS_PROXIES[this.currentProxyIndex];
-                this.currentProxyIndex = (this.currentProxyIndex + 1) % CORS_PROXIES.length;
-                return proxy;
-            }
-
-            filterCorruptionStories(stories) {
-                const seen = new Set();
-                return stories.filter(story => {
-                    if (seen.has(story.url)) return false;
-                    seen.add(story.url);
-                    return story.headline.length > 10 && story.summary.length > 20;
-                });
-            }
-
-            updateProgress(message) {
-                const storiesList = document.getElementById('storiesList');
-                if (storiesList) {
-                    storiesList.innerHTML = `
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <p>${message}</p>
-                        </div>
-                    `;
-                }
-            }
-
-            delay(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-        }
-
-        // Simple state management
-        var AppState = {
-            stories: [],
-            currentTab: 'dashboard',
-            
-            init: function() {
-                try {
-                    this.setupEventListeners();
-                    this.updateDisplay();
-                    console.log('✅ App initialized successfully');
-                } catch (e) {
-                    console.error('❌ Init error:', e);
-                }
-            },
-            
-            setupEventListeners: function() {
-                try {
-                    var pullBtn = document.getElementById('pullBtn');
-                    if (pullBtn) {
-                        pullBtn.onclick = () => this.loadAllRealData();
-                    }
-
-                    var stateFilter = document.getElementById('stateFilter');
-                    if (stateFilter) {
-                        stateFilter.onchange = () => this.refreshDisplay();
-                    }
-
-                    var severityFilter = document.getElementById('severityFilter');
-                    if (severityFilter) {
-                        severityFilter.onchange = () => this.refreshDisplay();
-                    }
-                } catch (e) {
-                    console.error('Event listener error:', e);
-                }
-            },
-
-            async loadAllRealData() {
-    try {
-        const btn = document.getElementById('pullBtn');
-        btn.disabled = true;
-        btn.textContent = 'Loading...';
-
-        const safetyTimeout = setTimeout(() => {
-            console.log('⏰ Safety timeout - forcing completion');
-            this.forceCompleteLoading();
-        }, 45000); // 45 seconds max
-        
-        console.log('🔄 Starting data collection...');
-        
-        const rssManager = new RSSFeedManager();
-        const stories = await rssManager.fetchAllFeeds();
-        
-        console.log(`✅ Collected ${stories.length} stories`);
-        
-        if (stories.length > 0) {
-            this.stories = stories;
-            this.refreshDisplay();
-            this.showSuccess(`🎉 Successfully loaded ${stories.length} real corruption stories!`);
-        } else {
-            throw new Error('No stories found');
-        }
-        clearTimeout(safetyTimeout);
-
-    } catch (error) {
-        console.error('Load error:', error);
-        this.showError('Error: ' + error.message);
-        loadSampleData(); // Fallback to sample data
-    } finally {
-        const btn = document.getElementById('pullBtn');
-        btn.disabled = false;
-        btn.textContent = '🔄 Load Real Data';
-    }
-},
-forceCompleteLoading: function() {
-    const btn = document.getElementById('pullBtn');
-    btn.disabled = false;
-    btn.textContent = '🔄 Load Real Data';
-    btn.classList.remove('loading');
-    
-    if (this.stories.length > 0) {
-        this.refreshDisplay();
-        this.showSuccess(`✅ Collected ${this.stories.length} stories (auto-completed)`);
-    } else {
-        this.showError('Loading timed out - try again');
-    }
-},
-            deduplicateStories: function(stories) {
-                const seen = new Set();
-                const urlSeen = new Set();
-                
-                return stories.filter(story => {
-                    if (!story.headline || !story.url) return false;
-                    
-                    if (urlSeen.has(story.url)) return false;
-                    urlSeen.add(story.url);
-                    
-                    const cleanHeadline = story.headline.toLowerCase()
-                        .replace(/[^\w\s]/g, '')
-                        .replace(/\s+/g, ' ')
-                        .trim()
-                        .substring(0, 50);
-                        
-                    if (seen.has(cleanHeadline)) return false;
-                    seen.add(cleanHeadline);
-                    
-                    return true;
-                });
-            },
-            
-            getFilteredStories: function() {
-                try {
-                    var filtered = this.stories.slice();
-
-                    var stateFilter = document.getElementById('stateFilter');
-                    if (stateFilter && stateFilter.value !== '*') {
-                        filtered = filtered.filter(function(s) {
-                            return s.state === stateFilter.value;
-                        });
-                    }
-
-                    var severityFilter = document.getElementById('severityFilter');
-                    if (severityFilter && severityFilter.value !== '*') {
-                        filtered = filtered.filter(function(s) {
-                            return s.severity === severityFilter.value;
-                        });
-                    }
-
-                    return filtered;
-                } catch (e) {
-                    console.error('Filter error:', e);
-                    return [];
-                }
-            },
-            
-            updateStats: function() {
-                try {
-                    var filtered = this.getFilteredStories();
-                    
-                    var totalEl = document.getElementById('totalStories');
-                    var headerCountEl = document.getElementById('headerStoriesCount');
-                    if (totalEl) totalEl.textContent = filtered.length;
-                    if (headerCountEl) headerCountEl.textContent = filtered.length;
-
-                    var states = [];
-                    for (var i = 0; i < filtered.length; i++) {
-                        if (filtered[i].state && states.indexOf(filtered[i].state) === -1) {
-                            states.push(filtered[i].state);
-                        }
-                    }
-                    var statesEl = document.getElementById('statesCovered');
-                    if (statesEl) statesEl.textContent = states.length;
-
-                    var amounts = [];
-                    for (var i = 0; i < filtered.length; i++) {
-                        if (filtered[i].amount) {
-                            amounts.push(filtered[i].amount);
-                        }
-                    }
-                    var avgAmount = amounts.length ? amounts.reduce(function(a, b) { return a + b; }) / amounts.length : 0;
-                    var avgEl = document.getElementById('avgAmount');
-                    if (avgEl) avgEl.textContent = '$' + Math.round(avgAmount).toLocaleString();
-
-                    var highCount = 0;
-                    for (var i = 0; i < filtered.length; i++) {
-                        if (filtered[i].severity === 'HIGH') {
-                            highCount++;
-                        }
-                    }
-                    var highEl = document.getElementById('highSeverity');
-                    if (highEl) highEl.textContent = highCount;
-
-                    var updateEl = document.getElementById('headerLastUpdate');
-                    if (updateEl) updateEl.textContent = new Date().toLocaleTimeString();
-                } catch (e) {
-                    console.error('Stats update error:', e);
-                }
-            },
-            
-            renderStories: function() {
-                try {
-                    var storiesList = document.getElementById('storiesList');
-                    if (!storiesList) return;
-
-                    var filtered = this.getFilteredStories();
-
-                    if (filtered.length === 0) {
-                        storiesList.innerHTML = '<div class="loading"><p>No stories match current filters</p></div>';
-                        return;
-                    }
-
-                    filtered.sort(function(a, b) {
-                        return b.riskScore - a.riskScore;
-                    });
-
-                    var html = '';
-                    for (var i = 0; i < Math.min(filtered.length, 30); i++) {
-                        var story = filtered[i];
-                        var ageHours = (Date.now() - new Date(story.date)) / (1000 * 60 * 60);
-                        var freshnessText = ageHours > 168 ? '🔴 1w+ old' : ageHours > 24 ? '🟡 1d+ old' : '🟢 Fresh';
-
-                        html += '<div class="story-item ' + story.severity.toLowerCase() + '" onclick="window.open(\'' + story.url + '\', \'_blank\')">';
-                        html += '<div class="story-title">' + story.headline + '</div>';
-                        html += '<div class="story-meta">';
-                        html += '<span>' + (story.state || 'Unknown') + '</span>';
-                        html += '<span>' + story.severity + '</span>';
-                        html += '<span>' + new Date(story.date).toLocaleDateString() + '</span>';
-                        html += '<span>' + freshnessText + '</span>';
-                        html += '<span style="background: #9b59b6; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem;">' + story.source + '</span>';
-                        html += '</div>';
-                        html += '<div class="story-summary">' + story.summary + '</div>';
-                        html += '<div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">';
-                        if (story.amount) {
-                            html += '<div class="story-amount">$' + story.amount.toLocaleString() + '</div>';
-                        }
-                        html += '<div style="flex: 1;">';
-                        html += '<div style="font-size: 0.8rem; color: #7f8c8d;">Risk Score: ' + story.riskScore + '/100</div>';
-                        html += '<div style="background: #ecf0f1; border-radius: 10px; height: 6px; margin-top: 3px;">';
-                        var color = story.riskScore > 70 ? '#e74c3c' : story.riskScore > 40 ? '#f39c12' : '#27ae60';
-                        html += '<div style="background: ' + color + '; height: 100%; border-radius: 10px; width: ' + story.riskScore + '%;"></div>';
-                        html += '</div>';
-                        html += '</div>';
-                        html += '</div>';
-                        
-                        if (story.flags && story.flags.length) {
-                            html += '<div style="margin-top: 10px;">';
-                            for (var j = 0; j < story.flags.length; j++) {
-                                html += '<span style="background: #fadbd8; color: #e74c3c; padding: 2px 6px; border-radius: 8px; font-size: 0.7em; margin-right: 5px;">🚩 ' + story.flags[j] + '</span>';
-                            }
-                            html += '</div>';
-                        }
-                        
-                        html += '</div>';
-                    }
-
-                    if (filtered.length > 30) {
-                        html += '<div style="text-align: center; padding: 20px; color: #7f8c8d;">Showing first 30 of ' + filtered.length + ' stories</div>';
-                    }
-
-                    storiesList.innerHTML = html;
-                } catch (e) {
-                    console.error('Render stories error:', e);
-                }
-            },
-            
-            renderCharts: function() {
-                try {
-                    this.renderTrendsChart();
-                    this.renderGeoChart();
-                } catch (e) {
-                    console.error('Chart render error:', e);
-                }
-            },
-            
-            renderTrendsChart: function() {
-                try {
-                    var chartEl = document.getElementById('trendsChart');
-                    if (!chartEl || this.stories.length === 0) return;
-
-                    var severityCounts = { HIGH: 0, MEDIUM: 0, LOW: 0 };
-                    for (var i = 0; i < this.stories.length; i++) {
-                        severityCounts[this.stories[i].severity]++;
-                    }
-
-                    var maxCount = Math.max(severityCounts.HIGH, severityCounts.MEDIUM, severityCounts.LOW);
-                    
-                    var html = '';
-                    for (var severity in severityCounts) {
-                        var height = maxCount > 0 ? (severityCounts[severity] / maxCount) * 200 : 0;
-                        var color = severity === 'HIGH' ? '#e74c3c' : severity === 'MEDIUM' ? '#f39c12' : '#27ae60';
-                        html += '<div class="chart-bar" style="height: ' + height + 'px; background: ' + color + ';">';
-                        html += '<div class="chart-bar-label">' + severity + '<br>' + severityCounts[severity] + '</div>';
-                        html += '</div>';
-                    }
-
-                    chartEl.innerHTML = html;
-                } catch (e) {
-                    console.error('Trends chart error:', e);
-                }
-            },
-            
-            renderGeoChart: function() {
-                try {
-                    var chartEl = document.getElementById('geoChart');
-                    if (!chartEl || this.stories.length === 0) return;
-
-                    var stateCounts = {};
-                    for (var i = 0; i < this.stories.length; i++) {
-                        var state = this.stories[i].state;
-                        if (state) {
-                            stateCounts[state] = (stateCounts[state] || 0) + 1;
-                        }
-                    }
-
-                    var sortedStates = Object.keys(stateCounts).sort(function(a, b) {
-                        return stateCounts[b] - stateCounts[a];
-                    }).slice(0, 8);
-
-                    var maxCount = sortedStates.length > 0 ? stateCounts[sortedStates[0]] : 0;
-                    
-                    var html = '';
-                    for (var i = 0; i < sortedStates.length; i++) {
-                        var state = sortedStates[i];
-                        var count = stateCounts[state];
-                        var height = maxCount > 0 ? (count / maxCount) * 200 : 0;
-                        html += '<div class="chart-bar" style="height: ' + height + 'px;">';
-                        html += '<div class="chart-bar-label">' + state + '<br>' + count + '</div>';
-                        html += '</div>';
-                    }
-
-                    chartEl.innerHTML = html || '<div style="text-align: center; color: #7f8c8d;">No geographic data available</div>';
-                } catch (e) {
-                    console.error('Geo chart error:', e);
-                }
-            },
-            
-            updateStateFilter: function() {
-                try {
-                    var stateFilter = document.getElementById('stateFilter');
-                    if (!stateFilter) return;
-
-                    var states = [];
-                    for (var i = 0; i < this.stories.length; i++) {
-                        if (this.stories[i].state && states.indexOf(this.stories[i].state) === -1) {
-                            states.push(this.stories[i].state);
-                        }
-                    }
-                    states.sort();
-                    
-                    var currentValue = stateFilter.value;
-                    var html = '<option value="*">All States</option>';
-                    for (var i = 0; i < states.length; i++) {
-                        html += '<option value="' + states[i] + '">' + states[i] + '</option>';
-                    }
-                    stateFilter.innerHTML = html;
-                    stateFilter.value = currentValue;
-                } catch (e) {
-                    console.error('State filter error:', e);
-                }
-            },
-            
-            updateAnalytics: function() {
-    try {
-        var analyticsEl = document.getElementById('analyticsInsights');
-        if (!analyticsEl || this.stories.length === 0) return;
-
-        var insights = [];
-        var highRiskCount = 0;
-        var totalAmount = 0;
-        var govSourceCount = 0;
-        
-        for (var i = 0; i < this.stories.length; i++) {
-            var story = this.stories[i];
-            
-            if (story.severity === 'HIGH') highRiskCount++;
-            if (story.amount) totalAmount += story.amount;
-            
-            var source = story.source || '';
-            if (source.includes('DOJ') || source.includes('FBI') || source.includes('gov')) {
-                govSourceCount++;
-            }
-        }
-
-        insights.push('🔍 ' + highRiskCount + ' high-risk cases identified');
-        insights.push('💰 Total financial impact: $' + totalAmount.toLocaleString());
-        insights.push('🏛️ ' + govSourceCount + ' cases from government sources');
-        insights.push('📊 Average risk score: ' + Math.round(this.stories.reduce(function(sum, s) { return sum + s.riskScore; }, 0) / this.stories.length));
-
-        analyticsEl.innerHTML = insights.map(function(insight) {
-            return '<p style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 8px;">' + insight + '</p>';
-        }).join('');
-    } catch (e) {
-        console.error('Analytics update error:', e);
-    }
-},
-            
-            refreshDisplay: function() {
-                try {
-                    this.updateStats();
-                    this.renderStories();
-                    this.renderCharts();
-                    this.updateStateFilter();
-                    this.updateAnalytics();
-                } catch (e) {
-                    console.error('Refresh display error:', e);
-                }
-            },
-            
-            updateDisplay: function() {
-                try {
-                    this.updateStats();
-                    this.renderStories();
-                } catch (e) {
-                    console.error('Update display error:', e);
-                }
-            },
-            
-            showSuccess: function(message) {
-                try {
-                    var notification = document.createElement('div');
-                    notification.className = 'success-message';
-                    notification.style.position = 'fixed';
-                    notification.style.top = '20px';
-                    notification.style.right = '20px';
-                    notification.style.zIndex = '10000';
-                    notification.style.maxWidth = '400px';
-                    notification.style.whiteSpace = 'pre-line';
-                    notification.innerHTML = message;
-                    
-                    document.body.appendChild(notification);
-                    
-                    setTimeout(function() {
-                        try {
-                            if (notification.parentNode) {
-                                notification.parentNode.removeChild(notification);
-                            }
-                        } catch (e) {
-                            console.error('Notification removal error:', e);
-                        }
-                    }, 8000);
-                } catch (e) {
-                    console.error('Show success error:', e);
-                }
-            },
-
-            showError: function(message) {
-                try {
-                    var notification = document.createElement('div');
-                    notification.className = 'error-message';
-                    notification.style.position = 'fixed';
-                    notification.style.top = '20px';
-                    notification.style.right = '20px';
-                    notification.style.zIndex = '10000';
-                    notification.style.maxWidth = '400px';
-                    notification.innerHTML = message;
-                    
-                    document.body.appendChild(notification);
-                    
-                    setTimeout(function() {
-                        try {
-                            if (notification.parentNode) {
-                                notification.parentNode.removeChild(notification);
-                            }
-                        } catch (e) {
-                            console.error('Notification removal error:', e);
-                        }
-                    }, 8000);
-                } catch (e) {
-                    console.error('Show error error:', e);
-                }
-            }
-        };
-
-        // Sample data loader (fallback)
+        // Global state
+        let storyArr = [];
+        let currentTab = 'dashboard';
+
+        // Sample corruption stories
         function loadSampleData() {
-            try {
-                const btn = document.getElementById('pullBtn');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.classList.add('loading');
-                    btn.textContent = 'Loading Sample...';
+            const sampleStories = [
+                {
+                    id: 'sample-1',
+                    headline: 'Mayor Charged with $2.3M Bribery Scheme in Federal Investigation',
+                    url: 'https://example.com/mayor-bribery',
+                    summary: 'Federal prosecutors have charged the mayor with accepting bribes from construction companies in exchange for favorable zoning decisions and no-bid contracts.',
+                    state: 'IL',
+                    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    amount: 2300000,
+                    severity: 'HIGH',
+                    riskScore: 95
+                },
+                {
+                    id: 'sample-2',
+                    headline: 'City Council Member Under Investigation for Nepotism',
+                    url: 'https://example.com/council-nepotism',
+                    summary: 'Ethics board investigating allegations that council member hired family members for high-paying city positions without proper vetting.',
+                    state: 'CA',
+                    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+                    amount: 180000,
+                    severity: 'MEDIUM',
+                    riskScore: 72
+                },
+                {
+                    id: 'sample-3',
+                    headline: 'Police Chief Embezzlement: $850K Missing from Evidence Fund',
+                    url: 'https://example.com/police-embezzlement',
+                    summary: 'Internal audit discovers police chief systematically diverted money from evidence storage fees into personal accounts.',
+                    state: 'TX',
+                    date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+                    amount: 850000,
+                    severity: 'HIGH',
+                    riskScore: 88
                 }
-
-                setTimeout(function() {
-                    try {
-                        const sampleData = [
-                            {
-                                id: 'sample-1',
-                                headline: "Federal Investigation: Mayor Charged with $2.3M Bribery Scheme",
-                                url: "https://example.com/mayor-bribery",
-                                summary: "Federal prosecutors have charged the mayor with accepting bribes from construction companies in exchange for favorable zoning decisions and no-bid contracts.",
-                                state: "IL",
-                                type: "news",
-                                subtype: "bribery",
-                                amount: 2300000,
-                                parties: ["Mayor Johnson", "ABC Construction"],
-                                flags: ["federalInvestigation", "noBidContract", "highAmount"],
-                                severity: "HIGH",
-                                source: "Federal Prosecutors",
-                                riskScore: 89,
-                                date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-                            },
-                            {
-                                id: 'sample-2',
-                                headline: "City Council Member Under Investigation for Nepotism",
-                                url: "https://example.com/council-nepotism",
-                                summary: "Ethics board investigating allegations that council member hired family members for high-paying city positions without proper vetting.",
-                                state: "CA",
-                                type: "news",
-                                subtype: "nepotism",
-                                amount: 180000,
-                                parties: ["Council Member Smith"],
-                                flags: ["familyTies", "ethicsViolation"],
-                                severity: "MEDIUM",
-                                source: "Local Ethics Board",
-                                riskScore: 56,
-                                date: new Date(Date.now() - Math.random() * 14 * 24 * 60 * 60 * 1000).toISOString()
-                            },
-                            {
-                                id: 'sample-3',
-                                headline: "Police Chief Embezzlement: $850K Missing from Evidence Fund",
-                                url: "https://example.com/police-embezzlement",
-                                summary: "Internal audit discovers police chief systematically diverted money from evidence storage fees into personal accounts over 3-year period.",
-                                state: "TX",
-                                type: "news",
-                                subtype: "embezzlement",
-                                amount: 850000,
-                                parties: ["Chief Williams"],
-                                flags: ["internalAudit", "multiYear", "personalUse"],
-                                severity: "HIGH",
-                                source: "Police Internal Affairs",
-                                riskScore: 78,
-                                date: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-                            },
-                            {
-                                id: 'sample-4',
-                                headline: "Data.gov API: Unusual Federal Spending Pattern Detected",
-                                url: "https://usaspending.gov/search",
-                                summary: "Automated analysis of government spending data reveals potential irregularities in federal contract awards, triggering oversight review.",
-                                state: "DC",
-                                type: "contract",
-                                subtype: "federal_spending",
-                                amount: 1500000,
-                                parties: [],
-                                flags: ["automated", "oversight", "spending"],
-                                severity: "MEDIUM",
-                                source: "Data.gov",
-                                riskScore: 65,
-                                date: new Date().toISOString()
-                            }
-                        ];
-
-                        AppState.stories = sampleData;
-                        AppState.refreshDisplay();
-                        AppState.showSuccess('✅ Loaded ' + sampleData.length + ' sample corruption cases for demonstration\n💡 Click "Load Real Data" to fetch live data from government APIs and RSS feeds');
-                    } catch (error) {
-                        console.error('Sample data generation error:', error);
-                    } finally {
-                        const btn = document.getElementById('pullBtn');
-                        if (btn) {
-                            btn.disabled = false;
-                            btn.classList.remove('loading');
-                            btn.textContent = '🔄 Load Real Data';
-                        }
-                    }
-                }, 1000);
-            } catch (e) {
-                console.error('Load sample data error:', e);
-            }
-        }
-
-        // API Status checker
-        async function checkAllAPIs() {
-            const container = document.getElementById('apiStatusContainer');
-            if (!container) return;
-
-            container.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Testing API connections...</p>
-                </div>
-            `;
-
-            const testSources = [
-                { name: 'Data.gov API', url: 'https://api.data.gov/', type: 'Government API', key: API_KEYS.dataGov },
-                { name: 'USASpending API', url: 'https://api.usaspending.gov/api/v2/search/spending_by_category/', type: 'Federal Data' },
-                { name: 'Justice Dept RSS', url: 'https://www.justice.gov/rss.xml', type: 'Government RSS' },
-                { name: 'FBI RSS', url: 'https://www.fbi.gov/news/pressrel/rss.xml', type: 'Government RSS' },
-                { name: 'ABC News RSS', url: 'http://feeds.abcnews.com/abcnews/usheadlines', type: 'Major News Feed' },
-                { name: 'NY Times Politics', url: 'https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml', type: 'Major News Feed' },
-                { name: 'CREW RSS', url: 'https://www.citizensforethics.org/feed/', type: 'Watchdog RSS' },
-                { name: 'Whistleblower.org', url: 'https://whistleblower.org/feed/', type: 'Watchdog RSS' },
-                { name: 'Spotlight PA', url: 'https://www.spotlightpa.org/feeds/full.xml', type: 'Investigative RSS' },
-                { name: 'Chicago Tribune', url: 'https://www.chicagotribune.com/feed/', type: 'Local News RSS' },
-                { name: 'Texas Observer', url: 'https://www.texasobserver.org/feed/', type: 'Investigative RSS' },
-                { name: '404 Media', url: 'https://www.404media.co/rss/', type: 'Tech Investigative RSS' }
             ];
 
-            let statusHtml = '<div class="api-status">';
-            let onlineCount = 0;
-
-            for (const source of testSources) {
-                try {
-                    let testUrl = source.url;
-                    
-                    // For RSS feeds, use CORS proxy
-                    if (source.type.includes('RSS') || source.type.includes('News')) {
-                        testUrl = CORS_PROXIES[0] + encodeURIComponent(source.url);
-                    }
-
-                    const startTime = Date.now();
-                    const response = await fetch(testUrl, {
-                        method: 'HEAD',
-                        signal: AbortSignal.timeout(5000)
-                    });
-                    const responseTime = Date.now() - startTime;
-
-                    if (response.ok || response.status === 405) { // 405 is OK for HEAD requests
-                        onlineCount++;
-                        statusHtml += `
-                            <div class="api-status-item">
-                                <div>
-                                    <strong>${source.name}</strong><br>
-                                    <small style="color: #7f8c8d;">${source.type} • ${responseTime}ms</small>
-                                    ${source.key ? '<br><small style="color: #27ae60;">✅ API Key Configured</small>' : ''}
-                                </div>
-                                <div class="status-online">✅ Online</div>
-                            </div>
-                        `;
-                    } else {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                } catch (error) {
-                    const errorMsg = error.name === 'TimeoutError' ? 'Timeout' : error.message;
-                    statusHtml += `
-                        <div class="api-status-item">
-                            <div>
-                                <strong>${source.name}</strong><br>
-                                <small style="color: #7f8c8d;">${source.type} • ${errorMsg}</small>
-                            </div>
-                            <div class="status-offline">❌ Offline</div>
-                        </div>
-                    `;
-                }
-
-                // Update progressively
-                container.innerHTML = statusHtml + '</div>';
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-
-            statusHtml += `
-                <div style="text-align: center; padding: 15px; color: #7f8c8d; border-top: 1px solid #ecf0f1; background: #f8f9fa; border-radius: 0 0 15px 15px;">
-                    <strong>${onlineCount}/${testSources.length} sources online (${Math.round((onlineCount/testSources.length)*100)}%)</strong><br>
-                    <small>🔑 Data.gov API Key: ${API_KEYS.dataGov ? 'Configured' : 'Not Set'}</small>
-                </div>
-            `;
-            statusHtml += '</div>';
-
-            container.innerHTML = statusHtml;
+            storyArr = sampleStories;
+            renderStories();
+            showSuccess('✅ Loaded 3 sample corruption stories!');
         }
 
-        // Tab management
-        function showTab(tabName) {
-            try {
-                var contents = document.querySelectorAll('.tab-content');
-                var tabs = document.querySelectorAll('.tab');
-                
-                for (var i = 0; i < contents.length; i++) {
-                    contents[i].classList.remove('active');
-                }
-                for (var i = 0; i < tabs.length; i++) {
-                    tabs[i].classList.remove('active');
-                }
-                
-                var targetTab = document.getElementById(tabName);
-                if (targetTab) {
-                    targetTab.classList.add('active');
-                }
-                
-                if (window.event && window.event.target) {
-                    window.event.target.classList.add('active');
-                }
-                
-                AppState.currentTab = tabName;
-
-                // Load specific tab data
-                if (tabName === 'api-status') {
-                    checkAllAPIs();
-                }
-            } catch (e) {
-                console.error('Show tab error:', e);
-            }
-        }
-
-        // Export data function
-        function exportData() {
-            try {
-                if (AppState.stories.length === 0) {
-                    alert('📊 No data to export! Please load data first.');
-                    return;
-                }
-
-                var csvContent = 'Headline,URL,State,Severity,Amount,Date,Source,Type,Risk Score\n';
-                
-                for (var i = 0; i < AppState.stories.length; i++) {
-                    var story = AppState.stories[i];
-                    csvContent += '"' + (story.headline || '').replace(/"/g, '""') + '",';
-                    csvContent += '"' + (story.url || '') + '",';
-                    csvContent += (story.state || '') + ',';
-                    csvContent += (story.severity || '') + ',';
-                    csvContent += (story.amount || '') + ',';
-                    csvContent += (story.date || '') + ',';
-                    csvContent += (story.source || '') + ',';
-                    csvContent += (story.type || '') + ',';
-                    csvContent += (story.riskScore || '') + '\n';
-                }
-
-                var blob = new Blob([csvContent], { type: 'text/csv' });
-                var url = URL.createObjectURL(blob);
-                var a = document.createElement('a');
-                a.href = url;
-                a.download = 'corruption_data_export_' + new Date().toISOString().split('T')[0] + '.csv';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-
-                AppState.showSuccess('✅ Exported ' + AppState.stories.length + ' corruption cases to CSV file!');
-            } catch (e) {
-                console.error('Export error:', e);
-                alert('Export failed. Please try again.');
-            }
-        }
-
-        // Global error handler
-        window.onerror = function(message, source, lineno, colno, error) {
-            console.error('Global error:', message, 'at', source, ':', lineno);
-            return true;
-        };
-
-        // Initialize the app when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                console.log('🚀 Initializing Corruption Tracker Pro...');
-                console.log('🔑 Data.gov API Key configured:', API_KEYS.dataGov ? 'Yes' : 'No');
-                AppState.init();
-                
-                // Load sample data initially
-            } catch (e) {
-                console.error('❌ App initialization error:', e);
-            }
-        });
-
-        // Make functions globally available
-        window.showTab = showTab;
-        window.exportData = exportData;
-        window.loadSampleData = loadSampleData;
-        window.checkAllAPIs = checkAllAPIs;
-    </script>
-</body>
-</html> + totalAmount.toLocaleString());
-                    insights.push('🏛️ ' + govSourceCount + ' cases from federal government sources (DOJ, FBI, SEC)');
-                    insights.push('👁️ ' + watchdogCount + ' cases from watchdog organizations (CREW, Whistleblower.org, etc.)');
-                    insights.push('🔍 ' + investigativeCount + ' cases from investigative journalism outlets');
-                    insights.push('📰 ' + localSourceCount + ' cases from local and regional news sources');
-                    insights.push('📊 ' + Math.round((highRiskCount / this.stories.length) * 100) + '% of cases classified as high-risk (avg score: ' + Math.round(avgRisk) + '/100)');
-                    insights.push('🌐 Data sourced from ' + uniqueSources + ' unique outlets for comprehensive coverage');
-                    insights.push('🔑 Data.gov API integration providing real-time federal spending analysis');
-                    
-                    // Add source breakdown
-                    var sourceBreakdown = Object.entries(sourceCounts)
-                        .filter(([category, count]) => count > 0)
-                        .map(([category, count]) => category + ': ' + count)
-                        .join(' • ');
-                    insights.push('📈 Source breakdown: ' + sourceBreakdown);
-
-                    analyticsEl.innerHTML = insights.map(function(insight) {
-                        return '<p style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 8px;">' + insight + '</p>';
-                    }).join('');
-                } catch (e) {
-                    console.error('Analytics update error:', e);
-                }
-            },
+        // Render stories
+        function renderStories() {
+            const storiesList = document.getElementById('storiesList');
             
-            refreshDisplay: function() {
-                try {
-                    this.updateStats();
-                    this.renderStories();
-                    this.renderCharts();
-                    this.updateStateFilter();
-                    this.updateAnalytics();
-                } catch (e) {
-                    console.error('Refresh display error:', e);
-                }
-            },
-            
-            updateDisplay: function() {
-                try {
-                    this.updateStats();
-                    this.renderStories();
-                } catch (e) {
-                    console.error('Update display error:', e);
-                }
-            },
-            
-            showSuccess: function(message) {
-                try {
-                    var notification = document.createElement('div');
-                    notification.className = 'success-message';
-                    notification.style.position = 'fixed';
-                    notification.style.top = '20px';
-                    notification.style.right = '20px';
-                    notification.style.zIndex = '10000';
-                    notification.style.maxWidth = '400px';
-                    notification.style.whiteSpace = 'pre-line';
-                    notification.innerHTML = message;
-                    
-                    document.body.appendChild(notification);
-                    
-                    setTimeout(function() {
-                        try {
-                            if (notification.parentNode) {
-                                notification.parentNode.removeChild(notification);
-                            }
-                        } catch (e) {
-                            console.error('Notification removal error:', e);
-                        }
-                    }, 8000);
-                } catch (e) {
-                    console.error('Show success error:', e);
-                }
-            },
-
-            showError: function(message) {
-                try {
-                    var notification = document.createElement('div');
-                    notification.className = 'error-message';
-                    notification.style.position = 'fixed';
-                    notification.style.top = '20px';
-                    notification.style.right = '20px';
-                    notification.style.zIndex = '10000';
-                    notification.style.maxWidth = '400px';
-                    notification.innerHTML = message;
-                    
-                    document.body.appendChild(notification);
-                    
-                    setTimeout(function() {
-                        try {
-                            if (notification.parentNode) {
-                                notification.parentNode.removeChild(notification);
-                            }
-                        } catch (e) {
-                            console.error('Notification removal error:', e);
-                        }
-                    }, 8000);
-                } catch (e) {
-                    console.error('Show error error:', e);
-                }
-            }
-        };
-
-        // Sample data loader (fallback)
-        function loadSampleData() {
-            try {
-                const btn = document.getElementById('pullBtn');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.classList.add('loading');
-                    btn.textContent = 'Loading Sample...';
-                }
-
-                setTimeout(function() {
-                    try {
-                        const sampleData = [
-                            {
-                                id: 'sample-1',
-                                headline: "Federal Investigation: Mayor Charged with $2.3M Bribery Scheme",
-                                url: "https://example.com/mayor-bribery",
-                                summary: "Federal prosecutors have charged the mayor with accepting bribes from construction companies in exchange for favorable zoning decisions and no-bid contracts.",
-                                state: "IL",
-                                type: "news",
-                                subtype: "bribery",
-                                amount: 2300000,
-                                parties: ["Mayor Johnson", "ABC Construction"],
-                                flags: ["federalInvestigation", "noBidContract", "highAmount"],
-                                severity: "HIGH",
-                                source: "Federal Prosecutors",
-                                riskScore: 89,
-                                date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-                            },
-                            {
-                                id: 'sample-2',
-                                headline: "City Council Member Under Investigation for Nepotism",
-                                url: "https://example.com/council-nepotism",
-                                summary: "Ethics board investigating allegations that council member hired family members for high-paying city positions without proper vetting.",
-                                state: "CA",
-                                type: "news",
-                                subtype: "nepotism",
-                                amount: 180000,
-                                parties: ["Council Member Smith"],
-                                flags: ["familyTies", "ethicsViolation"],
-                                severity: "MEDIUM",
-                                source: "Local Ethics Board",
-                                riskScore: 56,
-                                date: new Date(Date.now() - Math.random() * 14 * 24 * 60 * 60 * 1000).toISOString()
-                            },
-                            {
-                                id: 'sample-3',
-                                headline: "Police Chief Embezzlement: $850K Missing from Evidence Fund",
-                                url: "https://example.com/police-embezzlement",
-                                summary: "Internal audit discovers police chief systematically diverted money from evidence storage fees into personal accounts over 3-year period.",
-                                state: "TX",
-                                type: "news",
-                                subtype: "embezzlement",
-                                amount: 850000,
-                                parties: ["Chief Williams"],
-                                flags: ["internalAudit", "multiYear", "personalUse"],
-                                severity: "HIGH",
-                                source: "Police Internal Affairs",
-                                riskScore: 78,
-                                date: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-                            },
-                            {
-                                id: 'sample-4',
-                                headline: "Data.gov API: Unusual Federal Spending Pattern Detected",
-                                url: "https://usaspending.gov/search",
-                                summary: "Automated analysis of government spending data reveals potential irregularities in federal contract awards, triggering oversight review.",
-                                state: "DC",
-                                type: "contract",
-                                subtype: "federal_spending",
-                                amount: 1500000,
-                                parties: [],
-                                flags: ["automated", "oversight", "spending"],
-                                severity: "MEDIUM",
-                                source: "Data.gov",
-                                riskScore: 65,
-                                date: new Date().toISOString()
-                            }
-                        ];
-
-                        AppState.stories = sampleData;
-                        AppState.refreshDisplay();
-                        AppState.showSuccess('✅ Loaded ' + sampleData.length + ' sample corruption cases for demonstration\n💡 Click "Load Real Data" to fetch live data from government APIs and RSS feeds');
-                    } catch (error) {
-                        console.error('Sample data generation error:', error);
-                    } finally {
-                        const btn = document.getElementById('pullBtn');
-                        if (btn) {
-                            btn.disabled = false;
-                            btn.classList.remove('loading');
-                            btn.textContent = '🔄 Load Real Data';
-                        }
-                    }
-                }, 1000);
-            } catch (e) {
-                console.error('Load sample data error:', e);
-            }
-        }
-
-        // API Status checker
-        async function checkAllAPIs() {
-            const container = document.getElementById('apiStatusContainer');
-            if (!container) return;
-
-            container.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Testing API connections...</p>
-                </div>
-            `;
-
-            const testSources = [
-                { name: 'Data.gov API', url: 'https://api.data.gov/', type: 'Government API', key: API_KEYS.dataGov },
-                { name: 'USASpending API', url: 'https://api.usaspending.gov/api/v2/search/spending_by_category/', type: 'Federal Data' },
-                { name: 'Justice Dept RSS', url: 'https://www.justice.gov/rss.xml', type: 'Government RSS' },
-                { name: 'ABC News RSS', url: 'http://feeds.abcnews.com/abcnews/usheadlines', type: 'News Feed' },
-                { name: 'CREW RSS', url: 'https://www.citizensforethics.org/feed/', type: 'Watchdog RSS' },
-                { name: 'FBI RSS', url: 'https://www.fbi.gov/news/pressrel/rss.xml', type: 'Government RSS' }
-            ];
-
-            let statusHtml = '<div class="api-status">';
-            let onlineCount = 0;
-
-            for (const source of testSources) {
-                try {
-                    let testUrl = source.url;
-                    
-                    // For RSS feeds, use CORS proxy
-                    if (source.type.includes('RSS') || source.type.includes('News')) {
-                        testUrl = CORS_PROXIES[0] + encodeURIComponent(source.url);
-                    }
-
-                    const startTime = Date.now();
-                    const response = await fetch(testUrl, {
-                        method: 'HEAD',
-                        signal: AbortSignal.timeout(5000)
-                    });
-                    const responseTime = Date.now() - startTime;
-
-                    if (response.ok || response.status === 405) { // 405 is OK for HEAD requests
-                        onlineCount++;
-                        statusHtml += `
-                            <div class="api-status-item">
-                                <div>
-                                    <strong>${source.name}</strong><br>
-                                    <small style="color: #7f8c8d;">${source.type} • ${responseTime}ms</small>
-                                    ${source.key ? '<br><small style="color: #27ae60;">✅ API Key Configured</small>' : ''}
-                                </div>
-                                <div class="status-online">✅ Online</div>
-                            </div>
-                        `;
-                    } else {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                } catch (error) {
-                    const errorMsg = error.name === 'TimeoutError' ? 'Timeout' : error.message;
-                    statusHtml += `
-                        <div class="api-status-item">
-                            <div>
-                                <strong>${source.name}</strong><br>
-                                <small style="color: #7f8c8d;">${source.type} • ${errorMsg}</small>
-                            </div>
-                            <div class="status-offline">❌ Offline</div>
-                        </div>
-                    `;
-                }
-
-                // Update progressively
-                container.innerHTML = statusHtml + '</div>';
-                await new Promise(resolve => setTimeout(resolve, 100));
+            if (storyArr.length === 0) {
+                storiesList.innerHTML = '<div class="loading"><p>No stories loaded. Click "Load Sample Data" to test.</p></div>';
+                return;
             }
 
-            statusHtml += `
-                <div style="text-align: center; padding: 15px; color: #7f8c8d; border-top: 1px solid #ecf0f1; background: #f8f9fa; border-radius: 0 0 15px 15px;">
-                    <strong>${onlineCount}/${testSources.length} sources online (${Math.round((onlineCount/testSources.length)*100)}%)</strong><br>
-                    <small>🔑 Data.gov API Key: ${API_KEYS.dataGov ? 'Configured' : 'Not Set'}</small>
-                </div>
-            `;
-            statusHtml += '</div>';
-
-            container.innerHTML = statusHtml;
-        }
-
-        // Tab management
-        function showTab(tabName) {
-            try {
-                var contents = document.querySelectorAll('.tab-content');
-                var tabs = document.querySelectorAll('.tab');
-                
-                for (var i = 0; i < contents.length; i++) {
-                    contents[i].classList.remove('active');
-                }
-                for (var i = 0; i < tabs.length; i++) {
-                    tabs[i].classList.remove('active');
-                }
-                
-                var targetTab = document.getElementById(tabName);
-                if (targetTab) {
-                    targetTab.classList.add('active');
-                }
-                
-                if (window.event && window.event.target) {
-                    window.event.target.classList.add('active');
-                }
-                
-                AppState.currentTab = tabName;
-
-                // Load specific tab data
-                if (tabName === 'api-status') {
-                    checkAllAPIs();
-                }
-            } catch (e) {
-                console.error('Show tab error:', e);
-            }
-        }
-
-        // Export data function
-        function exportData() {
-            try {
-                if (AppState.stories.length === 0) {
-                    alert('📊 No data to export! Please load data first.');
-                    return;
-                }
-
-                var csvContent = 'Headline,URL,State,Severity,Amount,Date,Source,Type,Risk Score\n';
-                
-                for (var i = 0; i < AppState.stories.length; i++) {
-                    var story = AppState.stories[i];
-                    csvContent += '"' + (story.headline || '').replace(/"/g, '""') + '",';
-                    csvContent += '"' + (story.url || '') + '",';
-                    csvContent += (story.state || '') + ',';
-                    csvContent += (story.severity || '') + ',';
-                    csvContent += (story.amount || '') + ',';
-                    csvContent += (story.date || '') + ',';
-                    csvContent += (story.source || '') + ',';
-                    csvContent += (story.type || '') + ',';
-                    csvContent += (story.riskScore || '') + '\n';
-                }
-
-                var blob = new Blob([csvContent], { type: 'text/csv' });
-                var url = URL.createObjectURL(blob);
-                var a = document.createElement('a');
-                a.href = url;
-                a.download = 'corruption_data_export_' + new Date().toISOString().split('T')[0] + '.csv';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-
-                AppState.showSuccess('✅ Exported ' + AppState.stories.length + ' corruption cases to CSV file!');
-            } catch (e) {
-                console.error('Export error:', e);
-                alert('Export failed. Please try again.');
-            }
-        }
-
-        // Global error handler
-        window.onerror = function(message, source, lineno, colno, error) {
-            console.error('Global error:', message, 'at', source, ':', lineno);
-            return true;
-        };
-
-        // Initialize the app when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                console.log('🚀 Initializing Corruption Tracker Pro...');
-                console.log('🔑 Data.gov API Key configured:', API_KEYS.dataGov ? 'Yes' : 'No');
-                AppState.init();
-                
-                // Load sample data initially
-                loadSampleData();
-            } catch (e) {
-                console.error('❌ App initialization error:', e);
-            }
-        });
-
-        // Make functions globally available
-        window.showTab = showTab;
-        window.exportData = exportData;
-        window.loadSampleData = loadSampleData;
-        window.checkAllAPIs = checkAllAPIs;
-// Newsletter Functions
-function addSampleContent() {
-    const content = document.getElementById('newsletterContent');
-    const date = new Date().toLocaleDateString();
-    content.innerHTML = `
-        <div style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #3498db;">
-            <h3>🚨 Breaking: Local Corruption Alert</h3>
-            <p><strong>Date:</strong> ${date}</p>
-            <p>This is a sample newsletter item. In a real newsletter, this would be a corruption story you dragged from the Dashboard.</p>
-            <p><strong>Impact:</strong> $500,000 in missing funds</p>
-        </div>
-        <div style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #e74c3c;">
-            <h3>🔍 Investigation Update</h3>
-            <p>Another sample story about ongoing corruption investigation...</p>
-        </div>
-    `;
-}
-
-function clearNewsletter() {
-    const content = document.getElementById('newsletterContent');
-    content.innerHTML = `
-        <p style="color: #7f8c8d; text-align: center; font-size: 1.1rem;">
-            🎯 Drag corruption stories here from the Dashboard tab<br>
-            <small>Or click "Add Sample Content" to test</small>
-        </p>
-    `;
-}
-
-function loadTemplate(type) {
-    const content = document.getElementById('newsletterContent');
-    const date = new Date().toLocaleDateString();
-    
-    if (type === 'weekly') {
-        content.innerHTML = `
-            <div style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
-                <h2>📅 Weekly Corruption Roundup - ${date}</h2>
-                <p>This week's most significant corruption cases...</p>
-            </div>
-        `;
-    } else if (type === 'breaking') {
-        content.innerHTML = `
-            <div style="margin-bottom: 20px; padding: 20px; background: #fff3cd; border-radius: 10px;">
-                <h2>⚡ Breaking Corruption Alert - ${date}</h2>
-                <p>Urgent corruption development requiring immediate attention...</p>
-            </div>
-        `;
-    } else if (type === 'summary') {
-        content.innerHTML = `
-            <div style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
-                <h2>📊 Monthly Corruption Summary - ${date}</h2>
-                <p>Statistical overview of corruption cases this month...</p>
-            </div>
-        `;
-    }
-}
-
-function exportNewsletter(format) {
-    const content = document.getElementById('newsletterContent');
-    const title = document.getElementById('newsletterTitle').value || 'Corruption Newsletter';
-    const author = document.getElementById('authorName').value || 'Corruption Tracker';
-    const date = new Date().toLocaleDateString();
-    
-    if (format === 'html') {
-        const html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>${title}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; }
-                    .header { background: #3498db; color: white; padding: 20px; text-align: center; border-radius: 10px; }
-                    .content { margin-top: 20px; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>${title}</h1>
-                    <p>By ${author} • ${date}</p>
-                </div>
-                <div class="content">
-                    ${content.innerHTML}
-                </div>
-            </body>
-            </html>
-        `;
-        
-        const blob = new Blob([html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${title.replace(/[^a-z0-9]/gi, '_')}_${date.replace(/\//g, '_')}.html`;
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        alert('✅ Newsletter exported as HTML file!');
-    } else if (format === 'pdf') {
-        alert('📋 PDF export coming soon! Use HTML export for now.');
-    }
-}
-    </script>
-<!-- Complete Fix for Newsletter and Button Functions -->
-<!-- Add this JavaScript code right before the closing </body> tag in your index.html -->
-
-<script>
-console.log('🔧 Loading complete newsletter and button fixes...');
-
-// Global error handler
-window.addEventListener('error', function(e) {
-    console.error('Global error:', e.error);
-});
-
-// Fix 1: Define all missing newsletter functions
-function addSampleContent() {
-    console.log('📝 Adding sample content to newsletter...');
-    
-    const sampleStories = [
-        {
-            id: 'sample-1',
-            headline: 'Mayor Charged with $2.3M Bribery Scheme in Federal Investigation',
-            url: 'https://example.com/mayor-bribery',
-            summary: 'Federal prosecutors have charged the mayor with accepting bribes from construction companies in exchange for favorable zoning decisions and no-bid contracts over a three-year period.',
-            state: 'IL',
-            date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            type: 'news',
-            subtype: 'bribery',
-            amount: 2300000,
-            parties: ['Mayor Johnson', 'ABC Construction'],
-            flags: ['federalInvestigation', 'noBidContract', 'highAmount'],
-            severity: 'HIGH',
-            riskScore: 95,
-            source: 'Federal Prosecutors'
-        },
-        {
-            id: 'sample-2',
-            headline: 'City Council Member Under Investigation for Nepotism and Ethics Violations',
-            url: 'https://example.com/council-nepotism',
-            summary: 'Ethics board investigating allegations that council member hired family members for high-paying city positions without proper vetting or qualifications.',
-            state: 'CA',
-            date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-            type: 'news',
-            subtype: 'nepotism',
-            amount: 180000,
-            parties: ['Council Member Smith'],
-            flags: ['familyTies', 'ethicsViolation'],
-            severity: 'MEDIUM',
-            riskScore: 72,
-            source: 'Local Ethics Board'
-        },
-        {
-            id: 'sample-3',
-            headline: 'Police Chief Embezzlement: $850K Missing from Evidence Fund',
-            url: 'https://example.com/police-embezzlement',
-            summary: 'Internal audit discovers police chief systematically diverted money from evidence storage fees into personal accounts over a three-year period.',
-            state: 'TX',
-            date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-            type: 'news',
-            subtype: 'embezzlement',
-            amount: 850000,
-            parties: ['Chief Williams'],
-            flags: ['internalAudit', 'multiYear', 'personalUse'],
-            severity: 'HIGH',
-            riskScore: 88,
-            source: 'Police Internal Affairs'
-        }
-    ];
-
-    // Add each sample story to newsletter
-    sampleStories.forEach(story => {
-        addToNewsletter(story);
-    });
-
-    showNewsletterSuccess(`✅ Added ${sampleStories.length} sample stories to newsletter!`);
-}
-
-// Fix 2: Enhanced addToNewsletter function
-function addToNewsletter(story) {
-    console.log('📝 Adding story to newsletter:', story.headline);
-    
-    const content = document.getElementById('newsletterContent');
-    if (!content) {
-        console.error('❌ Newsletter content area not found');
-        return;
-    }
-
-    // Check if story already exists
-    const existingItems = content.querySelectorAll('.newsletter-item');
-    for (let item of existingItems) {
-        if (item.dataset.storyId === story.id) {
-            console.log('⚠️ Story already in newsletter');
-            showNewsletterError('Story already added to newsletter');
-            return;
-        }
-    }
-
-    // Clear placeholder text if this is the first item
-    if (existingItems.length === 0) {
-        content.innerHTML = '';
-    }
-
-    const item = document.createElement('div');
-    item.className = 'newsletter-item';
-    item.dataset.storyId = story.id;
-    
-    item.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: start; gap: 15px;">
-            <div style="flex: 1;">
-                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 8px; color: #2c3e50;">
-                    ${story.headline}
-                </div>
-                <div style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 10px;">
-                    📍 ${story.state || 'Unknown'} • 
-                    📅 ${new Date(story.date).toLocaleDateString()} • 
-                    🎯 Risk: ${story.riskScore}/100 •
-                    💰 ${story.amount ? '$' + story.amount.toLocaleString() : 'N/A'}
-                </div>
-                <div style="line-height: 1.5; margin-bottom: 12px; color: #555;">
-                    ${story.summary}
-                </div>
-                ${story.flags && story.flags.length ? `
-                    <div style="margin-top: 10px;">
-                        ${story.flags.map(flag => 
-                            `<span style="background: #fadbd8; color: #e74c3c; padding: 3px 8px; border-radius: 8px; font-size: 0.75em; margin-right: 5px;">🚩 ${flag}</span>`
-                        ).join('')}
+            storiesList.innerHTML = storyArr.map(story => `
+                <div style="background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; border-left: 5px solid ${story.severity === 'HIGH' ? '#e74c3c' : story.severity === 'MEDIUM' ? '#f39c12' : '#27ae60'}; cursor: pointer;"
+                     draggable="true"
+                     ondragstart="handleDragStart(event)"
+                     data-story='${JSON.stringify(story)}'>
+                    <div style="font-weight: 700; margin-bottom: 12px; color: #2c3e50; font-size: 1.1rem;">
+                        ${story.headline}
                     </div>
-                ` : ''}
-            </div>
-            <button onclick="removeFromNewsletter('${story.id}')" 
-                    style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; flex-shrink: 0;">
-                ×
-            </button>
-        </div>
-    `;
-    
-    content.appendChild(item);
-    console.log('✅ Story added to newsletter successfully');
-}
+                    <div style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 12px;">
+                        📍 ${story.state} • 📅 ${new Date(story.date).toLocaleDateString()} • 🎯 Risk: ${story.riskScore}/100
+                    </div>
+                    <div style="font-size: 0.95rem; color: #555; line-height: 1.5; margin-bottom: 15px;">
+                        ${story.summary}
+                    </div>
+                    ${story.amount ? `<div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 6px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; display: inline-block;">$${story.amount.toLocaleString()}</div>` : ''}
+                </div>
+            `).join('');
+        }
 
-// Fix 3: removeFromNewsletter function
-function removeFromNewsletter(storyId) {
-    console.log('🗑️ Removing story from newsletter:', storyId);
-    
-    const item = document.querySelector(`[data-story-id="${storyId}"]`);
-    if (item) {
-        item.remove();
-        console.log('✅ Story removed successfully');
-    }
-    
-    const content = document.getElementById('newsletterContent');
-    if (content && content.children.length === 0) {
-        content.innerHTML = `
-            <p style="color: #7f8c8d; text-align: center; font-size: 1.1rem;">
-                🎯 Drag corruption stories here to build your newsletter<br>
-                <small>Or click "Add Sample Content" to test</small>
-            </p>
-        `;
-    }
-}
+        // Newsletter functions
+        function addSampleContent() {
+            if (storyArr.length === 0) {
+                loadSampleData();
+            }
+            
+            storyArr.forEach(story => addToNewsletter(story));
+            showSuccess('✅ Added sample stories to newsletter!');
+        }
 
-// Fix 4: clearNewsletter function
-function clearNewsletter() {
-    console.log('🗑️ Clearing newsletter...');
-    
-    const content = document.getElementById('newsletterContent');
-    if (content) {
-        content.innerHTML = `
-            <p style="color: #7f8c8d; text-align: center; font-size: 1.1rem;">
-                🎯 Drag corruption stories here to build your newsletter<br>
-                <small>Or click "Add Sample Content" to test</small>
-            </p>
-        `;
-        showNewsletterSuccess('✅ Newsletter cleared!');
-    }
-}
+        function addToNewsletter(story) {
+            const content = document.getElementById('newsletterContent');
+            const existingItems = content.querySelectorAll('.newsletter-item');
+            
+            // Check if already exists
+            for (let item of existingItems) {
+                if (item.dataset.storyId === story.id) {
+                    return;
+                }
+            }
 
-// Fix 5: Enhanced export functions
-function exportNewsletter(format) {
-    console.log('📤 Exporting newsletter as:', format);
-    
-    const content = document.getElementById('newsletterContent');
-    const items = content.querySelectorAll('.newsletter-item');
-    
-    if (items.length === 0) {
-        showNewsletterError('Newsletter is empty! Add some content first by clicking "Add Sample Content" or dragging stories from the Dashboard.');
-        return;
-    }
+            // Remove placeholder
+            const placeholder = content.querySelector('p');
+            if (placeholder && existingItems.length === 0) {
+                placeholder.remove();
+            }
 
-    const title = document.getElementById('newsletterTitle')?.value || 'Corruption Newsletter';
-    const author = document.getElementById('authorName')?.value || 'Corruption Tracker';
-    const date = new Date().toLocaleDateString();
-    
-    console.log(`📄 Exporting ${items.length} items as ${format}`);
+            const item = document.createElement('div');
+            item.className = 'newsletter-item';
+            item.dataset.storyId = story.id;
+            
+            item.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: start; gap: 15px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; font-size: 1rem; color: #2c3e50; margin-bottom: 8px;">
+                            ${story.headline}
+                        </div>
+                        <div style="font-size: 0.8rem; color: #7f8c8d; margin-bottom: 8px;">
+                            📍 ${story.state} • 📅 ${new Date(story.date).toLocaleDateString()} • 🎯 ${story.riskScore}/100
+                        </div>
+                        <div style="font-size: 0.85rem; color: #555; line-height: 1.4;">
+                            ${story.summary}
+                        </div>
+                        ${story.amount ? `<div style="margin-top: 8px;"><span style="background: #3498db; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem;">💰 $${story.amount.toLocaleString()}</span></div>` : ''}
+                    </div>
+                    <button onclick="removeFromNewsletter('${story.id}')" 
+                            style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-size: 14px; flex-shrink: 0;">
+                        ×
+                    </button>
+                </div>
+            `;
+            
+            content.appendChild(item);
+        }
 
-    let content_text = '';
-    let filename = '';
-    let mimeType = '';
+        function removeFromNewsletter(storyId) {
+            const item = document.querySelector(`[data-story-id="${storyId}"]`);
+            if (item) {
+                item.remove();
+            }
+            
+            const content = document.getElementById('newsletterContent');
+            if (content.children.length === 0) {
+                content.innerHTML = `
+                    <p style="grid-column: 1 / -1; text-align: center; color: #7f8c8d; font-size: 1.1rem;">
+                        🎯 Drag corruption stories here to build your newsletter<br>
+                        <small>Or click "Add Sample Content" to test</small>
+                    </p>
+                `;
+            }
+        }
 
-    if (format === 'html') {
-        content_text = generateHTMLNewsletter(title, author, date, items);
-        filename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${date.replace(/\//g, '_')}.html`;
-        mimeType = 'text/html';
-        
-        showNewsletterSuccess('✅ HTML newsletter exported! Check your downloads folder.');
-    } else if (format === 'pdf') {
-        content_text = generatePrintNewsletter(title, author, date, items);
-        filename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_print.html`;
-        mimeType = 'text/html';
-        
-        showNewsletterSuccess('✅ Print-ready HTML generated! Open the file and use Ctrl+P to save as PDF.');
-    } else if (format === 'google') {
-        content_text = generateGoogleDocsNewsletter(title, author, date, items);
-        filename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_googledocs.html`;
-        mimeType = 'text/html';
-        
-        showNewsletterSuccess('✅ Google Docs format exported! Upload to Google Docs via File → Import.');
-    }
+        function clearNewsletter() {
+            const content = document.getElementById('newsletterContent');
+            content.innerHTML = `
+                <p style="grid-column: 1 / -1; text-align: center; color: #7f8c8d; font-size: 1.1rem;">
+                    🎯 Drag corruption stories here to build your newsletter<br>
+                    <small>Or click "Add Sample Content" to test</small>
+                </p>
+            `;
+            showSuccess('✅ Newsletter cleared!');
+        }
 
-    // Download the file
-    try {
-        const blob = new Blob([content_text], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        console.log('✅ Newsletter export successful');
-    } catch (error) {
-        console.error('❌ Export failed:', error);
-        showNewsletterError('Export failed: ' + error.message);
-    }
-}
+        function exportNewsletter(format) {
+            const content = document.getElementById('newsletterContent');
+            const items = content.querySelectorAll('.newsletter-item');
+            
+            if (items.length === 0) {
+                showError('Newsletter is empty! Add some content first.');
+                return;
+            }
 
-// Fix 6: Newsletter HTML generators
-function generateHTMLNewsletter(title, author, date, items) {
-    let itemsHTML = '';
-    items.forEach(item => {
-        itemsHTML += `<div style="margin-bottom: 30px; padding: 20px; border-left: 5px solid #3498db; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">${item.innerHTML}</div>`;
-    });
-
-    return `<!DOCTYPE html>
-<html lang="en">
+            const title = document.getElementById('newsletterTitle').value || 'Corruption Newsletter';
+            const author = document.getElementById('authorName').value || 'Corruption Tracker';
+            const date = new Date().toLocaleDateString();
+            
+            let htmlContent = `<!DOCTYPE html>
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title} - ${date}</title>
+    <title>${title}</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
-            max-width: 800px; 
-            margin: 0 auto; 
-            padding: 30px; 
-            background: #f8f9fa; 
-            line-height: 1.6; 
-        }
-        .header { 
-            background: linear-gradient(135deg, #2c3e50, #34495e); 
-            color: white; 
-            padding: 40px; 
-            border-radius: 15px; 
-            text-align: center; 
-            margin-bottom: 30px; 
-        }
-        .header h1 { margin: 0 0 10px 0; font-size: 2.5rem; }
-        .header p { margin: 0; opacity: 0.9; }
-        .footer { 
-            text-align: center; 
-            color: #7f8c8d; 
-            margin-top: 40px; 
-            padding-top: 20px; 
-            border-top: 1px solid #ddd; 
-        }
-        button { display: none; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 30px; }
+        .header { background: #2c3e50; color: white; padding: 30px; text-align: center; margin-bottom: 30px; }
+        .item { margin-bottom: 25px; padding: 20px; border-left: 5px solid #3498db; background: #f8f9fa; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>${title}</h1>
         <p>By ${author} • ${date}</p>
-        <p>Professional corruption monitoring and transparency reporting</p>
-    </div>
-    ${itemsHTML}
-    <div class="footer">
-        <p><strong>Generated by Corruption Tracker Dashboard</strong></p>
-        <p>Advanced government transparency platform with AI-powered analytics</p>
-    </div>
-</body>
-</html>`;
-}
+    </div>`;
 
-function generatePrintNewsletter(title, author, date, items) {
-    let itemsText = '';
-    items.forEach((item, index) => {
-        const textContent = item.textContent || item.innerText;
-        itemsText += `<div style="margin-bottom: 25px; padding: 20px; border: 1px solid #ddd; page-break-inside: avoid;"><h3>Story ${index + 1}</h3><div>${textContent}</div></div>`;
-    });
+            items.forEach(item => {
+                htmlContent += `<div class="item">${item.innerHTML}</div>`;
+            });
 
-    return `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>${title} - ${date}</title>
-    <style>
-        @page { margin: 1in; }
-        @media print { body { margin: 0; } .no-print { display: none; }}
-        body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.4; }
-        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
-        .story { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; page-break-inside: avoid; }
-    </style>
-</head>
-<body>
-    <h1>${title}</h1>
-    <p><strong>By:</strong> ${author} | <strong>Date:</strong> ${date}</p>
-    <p><strong>Source:</strong> Corruption Tracker Dashboard</p>
-    <hr>
-    ${itemsText}
-</body>
-</html>`;
-}
+            htmlContent += '</body></html>';
 
-function generateGoogleDocsNewsletter(title, author, date, items) {
-    let itemsHTML = '';
-    items.forEach((item, index) => {
-        itemsHTML += `<h2>Story ${index + 1}</h2><div>${item.innerHTML}</div><hr>`;
-    });
-
-    return `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>${title}</title>
-</head>
-<body>
-    <h1>${title}</h1>
-    <p><b>Author:</b> ${author}</p>
-    <p><b>Date:</b> ${date}</p>
-    <p><b>Source:</b> Corruption Tracker Dashboard</p>
-    <hr>
-    ${itemsHTML}
-</body>
-</html>`;
-}
-
-// Fix 7: Template loading functions
-function loadTemplate(type) {
-    console.log('📋 Loading template:', type);
-    
-    const content = document.getElementById('newsletterContent');
-    const date = new Date().toLocaleDateString();
-    let templateContent = '';
-
-    switch (type) {
-        case 'weekly':
-            templateContent = `
-                <div class="newsletter-item" data-story-id="template-weekly">
-                    <div style="padding: 20px;">
-                        <h2 style="color: #2c3e50; margin-bottom: 15px;">📅 Weekly Corruption Roundup - ${date}</h2>
-                        <p style="line-height: 1.6; color: #555;">This week's most significant corruption cases across the United States. Our comprehensive monitoring system has identified key developments in government transparency and accountability.</p>
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
-                            <strong>Drag corruption stories here to complete your weekly report</strong>
-                        </div>
-                    </div>
-                </div>
-            `;
-            break;
-        case 'breaking':
-            templateContent = `
-                <div class="newsletter-item" data-story-id="template-breaking">
-                    <div style="padding: 20px;">
-                        <h2 style="color: #e74c3c; margin-bottom: 15px;">⚡ Breaking Corruption Alert - ${date}</h2>
-                        <p style="line-height: 1.6; color: #555;">Urgent corruption developments requiring immediate attention from transparency advocates and investigative journalists.</p>
-                        <div style="background: #fef9e7; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #f39c12;">
-                            <strong>⚠️ High-priority cases for immediate review</strong>
-                        </div>
-                    </div>
-                </div>
-            `;
-            break;
-        case 'investigation':
-            templateContent = `
-                <div class="newsletter-item" data-story-id="template-investigation">
-                    <div style="padding: 20px;">
-                        <h2 style="color: #9b59b6; margin-bottom: 15px;">🔍 Deep Dive Investigation - ${date}</h2>
-                        <p style="line-height: 1.6; color: #555;">Comprehensive analysis of corruption patterns, political connections, and systemic accountability issues.</p>
-                        <div style="background: #f4f1f8; padding: 15px; border-radius: 8px; margin-top: 15px;">
-                            <strong>📊 Include network analysis and trend data</strong>
-                        </div>
-                    </div>
-                </div>
-            `;
-            break;
-        case 'analysis':
-            templateContent = `
-                <div class="newsletter-item" data-story-id="template-analysis">
-                    <div style="padding: 20px;">
-                        <h2 style="color: #27ae60; margin-bottom: 15px;">📊 Monthly Corruption Analysis - ${date}</h2>
-                        <p style="line-height: 1.6; color: #555;">Statistical trends, predictive insights, and comprehensive analysis for corruption monitoring and prevention.</p>
-                        <div style="background: #eafaf1; padding: 15px; border-radius: 8px; margin-top: 15px;">
-                            <strong>📈 Data-driven insights and recommendations</strong>
-                        </div>
-                    </div>
-                </div>
-            `;
-            break;
-    }
-    
-    if (content) {
-        content.innerHTML = templateContent;
-        showNewsletterSuccess(`✅ ${type} template loaded! Add more content by dragging stories or using "Add Sample Content".`);
-    }
-}
-
-// Fix 8: Notification functions
-function showNewsletterSuccess(message) {
-    showNewsletterNotification(message, 'success');
-}
-
-function showNewsletterError(message) {
-    showNewsletterNotification(message, 'error');
-}
-
-function showNewsletterNotification(message, type) {
-    const notification = document.createElement('div');
-    notification.className = type === 'success' ? 'success-message' : 'error-message';
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10000;
-        max-width: 400px;
-        padding: 15px 20px;
-        border-radius: 12px;
-        font-weight: 600;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    `;
-    notification.innerHTML = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showSuccess(`✅ Newsletter exported as ${format.toUpperCase()}!`);
         }
-    }, 5000);
-}
 
-// Fix 9: Initialize newsletter drag and drop
-function initializeNewsletterBuilder() {
-    console.log('📧 Initializing newsletter builder...');
-    
-    const dropZone = document.getElementById('newsletterContent');
-    if (!dropZone) {
-        console.error('❌ Newsletter drop zone not found');
-        return;
-    }
+        function loadTemplate(type) {
+            const content = document.getElementById('newsletterContent');
+            const date = new Date().toLocaleDateString();
+            
+            const templates = {
+                weekly: `Weekly Corruption Roundup - ${date}`,
+                breaking: `Breaking Corruption Alert - ${date}`,
+                analysis: `Monthly Analysis Report - ${date}`
+            };
+            
+            content.innerHTML = `
+                <div class="newsletter-item" data-story-id="template-${type}">
+                    <h2>${templates[type]}</h2>
+                    <p>Template loaded. Add corruption stories to complete your newsletter.</p>
+                </div>
+            `;
+            
+            showSuccess(`✅ ${type} template loaded!`);
+        }
 
-    // Enhanced drag and drop handlers
-    dropZone.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        dropZone.classList.add('dragover');
-    });
+        // Drag and drop
+        function handleDragStart(event) {
+            const storyData = event.target.getAttribute('data-story');
+            event.dataTransfer.setData('text/plain', storyData);
+        }
 
-    dropZone.addEventListener('dragleave', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        dropZone.classList.remove('dragover');
-    });
+        // Initialize newsletter drop zone
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('newsletterContent');
+            
+            dropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
 
-    dropZone.addEventListener('drop', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        dropZone.classList.remove('dragover');
-        
-        const storyData = e.dataTransfer.getData('text/plain');
-        if (storyData) {
-            try {
-                const story = JSON.parse(storyData);
-                addToNewsletter(story);
-            } catch (error) {
-                console.error('❌ Error parsing story data:', error);
-                showNewsletterError('Failed to add story - invalid data format');
+            dropZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                
+                const storyData = e.dataTransfer.getData('text/plain');
+                if (storyData) {
+                    try {
+                        const story = JSON.parse(storyData);
+                        addToNewsletter(story);
+                    } catch (error) {
+                        showError('Failed to add story');
+                    }
+                }
+            });
+        });
+
+        // Tab switching
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            currentTab = tabName;
+        }
+
+        // Utility functions
+        function showSuccess(message) {
+            showNotification(message, 'success');
+        }
+
+        function showError(message) {
+            showNotification(message, 'error');
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = type === 'success' ? 'success-message' : 'error-message';
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '10000';
+            notification.style.maxWidth = '400px';
+            notification.innerHTML = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 4000);
+        }
+
+        function exportData() {
+            if (storyArr.length === 0) {
+                showError('No data to export! Load sample data first.');
+                return;
             }
+            showSuccess('Export feature - would download CSV with corruption data');
         }
-    });
 
-    console.log('✅ Newsletter drag-and-drop initialized');
-}
-
-// Fix 10: Enhanced drag start for stories
-function handleDragStart(event) {
-    const storyElement = event.target.closest('.story-item');
-    if (!storyElement) return;
-
-    const storyData = storyElement.getAttribute('data-story');
-    if (!storyData) return;
-
-    event.dataTransfer.setData('text/plain', storyData);
-    event.dataTransfer.effectAllowed = 'copy';
-    
-    // Visual feedback
-    event.target.style.opacity = '0.5';
-    setTimeout(() => {
-        if (event.target) event.target.style.opacity = '1';
-    }, 100);
-}
-
-// Fix 11: Make all functions globally available
-window.addSampleContent = addSampleContent;
-window.addToNewsletter = addToNewsletter;
-window.removeFromNewsletter = removeFromNewsletter;
-window.clearNewsletter = clearNewsletter;
-window.exportNewsletter = exportNewsletter;
-window.loadTemplate = loadTemplate;
-window.handleDragStart = handleDragStart;
-window.initializeNewsletterBuilder = initializeNewsletterBuilder;
-
-// Fix 12: Initialize everything when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 Applying complete newsletter fixes...');
-    
-    // Initialize newsletter functionality
-    setTimeout(() => {
-        initializeNewsletterBuilder();
-        console.log('✅ All newsletter functions initialized successfully');
-    }, 1000);
-});
-
-// Fix 13: Also initialize if page is already loaded
-if (document.readyState !== 'loading') {
-    setTimeout(() => {
-        initializeNewsletterBuilder();
-        console.log('✅ Newsletter functions initialized (page already loaded)');
-    }, 1000);
-}
-
-console.log('✅ Complete newsletter and button fixes loaded successfully');
-</script>
-<script>
-// Enhanced newsletter layout functions
-function addToNewsletterEnhanced(story) {
-    const content = document.getElementById('newsletterContent');
-    if (!content) return;
-
-    // Check if already exists
-    const existingItems = content.querySelectorAll('.newsletter-item');
-    for (let item of existingItems) {
-        if (item.dataset.storyId === story.id) {
-            showNewsletterError('Story already added to newsletter');
-            return;
-        }
-    }
-
-    // Remove placeholder
-    const placeholder = content.querySelector('p');
-    if (placeholder && existingItems.length === 0) {
-        placeholder.remove();
-    }
-
-    const item = document.createElement('div');
-    item.className = 'newsletter-item';
-    item.dataset.storyId = story.id;
-    
-    // Compact layout
-    item.innerHTML = `
-        <div>
-            <div>
-                <div style="font-weight: bold; font-size: 1rem; color: #2c3e50; line-height: 1.3; margin-bottom: 8px;">
-                    ${story.headline}
-                </div>
-                <div style="font-size: 0.8rem; color: #7f8c8d; margin-bottom: 8px;">
-                    📍 ${story.state || 'Unknown'} • 📅 ${new Date(story.date).toLocaleDateString()} • 🎯 ${story.riskScore}/100
-                </div>
-                <div style="font-size: 0.85rem; color: #555; line-height: 1.4; max-height: 3.6em; overflow: hidden;">
-                    ${story.summary}
-                </div>
-                ${story.amount ? `<div style="margin-top: 8px;"><span style="background: #3498db; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem;">💰 $${story.amount.toLocaleString()}</span></div>` : ''}
-            </div>
-            <button onclick="removeFromNewsletter('${story.id}')" 
-                    style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-size: 14px; flex-shrink: 0;">
-                ×
-            </button>
-        </div>
-    `;
-    
-    content.appendChild(item);
-    console.log('✅ Story added to newsletter (wide layout)');
-}
-
-// Override functions after page loads
-setTimeout(() => {
-    if (typeof window.addToNewsletter !== 'undefined') {
-        window.addToNewsletter = addToNewsletterEnhanced;
-        console.log('✅ Wide newsletter layout activated');
-    }
-}, 2000);
-</script>
+        // Load sample data on page load for demonstration
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(loadSampleData, 1000);
+        });
+    </script>
 </body>
 </html>
