@@ -2790,5 +2790,545 @@ function exportNewsletter(format) {
     }
 }
     </script>
+<!-- Complete Fix for Newsletter and Button Functions -->
+<!-- Add this JavaScript code right before the closing </body> tag in your index.html -->
+
+<script>
+console.log('🔧 Loading complete newsletter and button fixes...');
+
+// Global error handler
+window.addEventListener('error', function(e) {
+    console.error('Global error:', e.error);
+});
+
+// Fix 1: Define all missing newsletter functions
+function addSampleContent() {
+    console.log('📝 Adding sample content to newsletter...');
+    
+    const sampleStories = [
+        {
+            id: 'sample-1',
+            headline: 'Mayor Charged with $2.3M Bribery Scheme in Federal Investigation',
+            url: 'https://example.com/mayor-bribery',
+            summary: 'Federal prosecutors have charged the mayor with accepting bribes from construction companies in exchange for favorable zoning decisions and no-bid contracts over a three-year period.',
+            state: 'IL',
+            date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            type: 'news',
+            subtype: 'bribery',
+            amount: 2300000,
+            parties: ['Mayor Johnson', 'ABC Construction'],
+            flags: ['federalInvestigation', 'noBidContract', 'highAmount'],
+            severity: 'HIGH',
+            riskScore: 95,
+            source: 'Federal Prosecutors'
+        },
+        {
+            id: 'sample-2',
+            headline: 'City Council Member Under Investigation for Nepotism and Ethics Violations',
+            url: 'https://example.com/council-nepotism',
+            summary: 'Ethics board investigating allegations that council member hired family members for high-paying city positions without proper vetting or qualifications.',
+            state: 'CA',
+            date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+            type: 'news',
+            subtype: 'nepotism',
+            amount: 180000,
+            parties: ['Council Member Smith'],
+            flags: ['familyTies', 'ethicsViolation'],
+            severity: 'MEDIUM',
+            riskScore: 72,
+            source: 'Local Ethics Board'
+        },
+        {
+            id: 'sample-3',
+            headline: 'Police Chief Embezzlement: $850K Missing from Evidence Fund',
+            url: 'https://example.com/police-embezzlement',
+            summary: 'Internal audit discovers police chief systematically diverted money from evidence storage fees into personal accounts over a three-year period.',
+            state: 'TX',
+            date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            type: 'news',
+            subtype: 'embezzlement',
+            amount: 850000,
+            parties: ['Chief Williams'],
+            flags: ['internalAudit', 'multiYear', 'personalUse'],
+            severity: 'HIGH',
+            riskScore: 88,
+            source: 'Police Internal Affairs'
+        }
+    ];
+
+    // Add each sample story to newsletter
+    sampleStories.forEach(story => {
+        addToNewsletter(story);
+    });
+
+    showNewsletterSuccess(`✅ Added ${sampleStories.length} sample stories to newsletter!`);
+}
+
+// Fix 2: Enhanced addToNewsletter function
+function addToNewsletter(story) {
+    console.log('📝 Adding story to newsletter:', story.headline);
+    
+    const content = document.getElementById('newsletterContent');
+    if (!content) {
+        console.error('❌ Newsletter content area not found');
+        return;
+    }
+
+    // Check if story already exists
+    const existingItems = content.querySelectorAll('.newsletter-item');
+    for (let item of existingItems) {
+        if (item.dataset.storyId === story.id) {
+            console.log('⚠️ Story already in newsletter');
+            showNewsletterError('Story already added to newsletter');
+            return;
+        }
+    }
+
+    // Clear placeholder text if this is the first item
+    if (existingItems.length === 0) {
+        content.innerHTML = '';
+    }
+
+    const item = document.createElement('div');
+    item.className = 'newsletter-item';
+    item.dataset.storyId = story.id;
+    
+    item.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: start; gap: 15px;">
+            <div style="flex: 1;">
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 8px; color: #2c3e50;">
+                    ${story.headline}
+                </div>
+                <div style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 10px;">
+                    📍 ${story.state || 'Unknown'} • 
+                    📅 ${new Date(story.date).toLocaleDateString()} • 
+                    🎯 Risk: ${story.riskScore}/100 •
+                    💰 ${story.amount ? '$' + story.amount.toLocaleString() : 'N/A'}
+                </div>
+                <div style="line-height: 1.5; margin-bottom: 12px; color: #555;">
+                    ${story.summary}
+                </div>
+                ${story.flags && story.flags.length ? `
+                    <div style="margin-top: 10px;">
+                        ${story.flags.map(flag => 
+                            `<span style="background: #fadbd8; color: #e74c3c; padding: 3px 8px; border-radius: 8px; font-size: 0.75em; margin-right: 5px;">🚩 ${flag}</span>`
+                        ).join('')}
+                    </div>
+                ` : ''}
+            </div>
+            <button onclick="removeFromNewsletter('${story.id}')" 
+                    style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; flex-shrink: 0;">
+                ×
+            </button>
+        </div>
+    `;
+    
+    content.appendChild(item);
+    console.log('✅ Story added to newsletter successfully');
+}
+
+// Fix 3: removeFromNewsletter function
+function removeFromNewsletter(storyId) {
+    console.log('🗑️ Removing story from newsletter:', storyId);
+    
+    const item = document.querySelector(`[data-story-id="${storyId}"]`);
+    if (item) {
+        item.remove();
+        console.log('✅ Story removed successfully');
+    }
+    
+    const content = document.getElementById('newsletterContent');
+    if (content && content.children.length === 0) {
+        content.innerHTML = `
+            <p style="color: #7f8c8d; text-align: center; font-size: 1.1rem;">
+                🎯 Drag corruption stories here to build your newsletter<br>
+                <small>Or click "Add Sample Content" to test</small>
+            </p>
+        `;
+    }
+}
+
+// Fix 4: clearNewsletter function
+function clearNewsletter() {
+    console.log('🗑️ Clearing newsletter...');
+    
+    const content = document.getElementById('newsletterContent');
+    if (content) {
+        content.innerHTML = `
+            <p style="color: #7f8c8d; text-align: center; font-size: 1.1rem;">
+                🎯 Drag corruption stories here to build your newsletter<br>
+                <small>Or click "Add Sample Content" to test</small>
+            </p>
+        `;
+        showNewsletterSuccess('✅ Newsletter cleared!');
+    }
+}
+
+// Fix 5: Enhanced export functions
+function exportNewsletter(format) {
+    console.log('📤 Exporting newsletter as:', format);
+    
+    const content = document.getElementById('newsletterContent');
+    const items = content.querySelectorAll('.newsletter-item');
+    
+    if (items.length === 0) {
+        showNewsletterError('Newsletter is empty! Add some content first by clicking "Add Sample Content" or dragging stories from the Dashboard.');
+        return;
+    }
+
+    const title = document.getElementById('newsletterTitle')?.value || 'Corruption Newsletter';
+    const author = document.getElementById('authorName')?.value || 'Corruption Tracker';
+    const date = new Date().toLocaleDateString();
+    
+    console.log(`📄 Exporting ${items.length} items as ${format}`);
+
+    let content_text = '';
+    let filename = '';
+    let mimeType = '';
+
+    if (format === 'html') {
+        content_text = generateHTMLNewsletter(title, author, date, items);
+        filename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${date.replace(/\//g, '_')}.html`;
+        mimeType = 'text/html';
+        
+        showNewsletterSuccess('✅ HTML newsletter exported! Check your downloads folder.');
+    } else if (format === 'pdf') {
+        content_text = generatePrintNewsletter(title, author, date, items);
+        filename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_print.html`;
+        mimeType = 'text/html';
+        
+        showNewsletterSuccess('✅ Print-ready HTML generated! Open the file and use Ctrl+P to save as PDF.');
+    } else if (format === 'google') {
+        content_text = generateGoogleDocsNewsletter(title, author, date, items);
+        filename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_googledocs.html`;
+        mimeType = 'text/html';
+        
+        showNewsletterSuccess('✅ Google Docs format exported! Upload to Google Docs via File → Import.');
+    }
+
+    // Download the file
+    try {
+        const blob = new Blob([content_text], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('✅ Newsletter export successful');
+    } catch (error) {
+        console.error('❌ Export failed:', error);
+        showNewsletterError('Export failed: ' + error.message);
+    }
+}
+
+// Fix 6: Newsletter HTML generators
+function generateHTMLNewsletter(title, author, date, items) {
+    let itemsHTML = '';
+    items.forEach(item => {
+        itemsHTML += `<div style="margin-bottom: 30px; padding: 20px; border-left: 5px solid #3498db; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">${item.innerHTML}</div>`;
+    });
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title} - ${date}</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 30px; 
+            background: #f8f9fa; 
+            line-height: 1.6; 
+        }
+        .header { 
+            background: linear-gradient(135deg, #2c3e50, #34495e); 
+            color: white; 
+            padding: 40px; 
+            border-radius: 15px; 
+            text-align: center; 
+            margin-bottom: 30px; 
+        }
+        .header h1 { margin: 0 0 10px 0; font-size: 2.5rem; }
+        .header p { margin: 0; opacity: 0.9; }
+        .footer { 
+            text-align: center; 
+            color: #7f8c8d; 
+            margin-top: 40px; 
+            padding-top: 20px; 
+            border-top: 1px solid #ddd; 
+        }
+        button { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>${title}</h1>
+        <p>By ${author} • ${date}</p>
+        <p>Professional corruption monitoring and transparency reporting</p>
+    </div>
+    ${itemsHTML}
+    <div class="footer">
+        <p><strong>Generated by Corruption Tracker Dashboard</strong></p>
+        <p>Advanced government transparency platform with AI-powered analytics</p>
+    </div>
+</body>
+</html>`;
+}
+
+function generatePrintNewsletter(title, author, date, items) {
+    let itemsText = '';
+    items.forEach((item, index) => {
+        const textContent = item.textContent || item.innerText;
+        itemsText += `<div style="margin-bottom: 25px; padding: 20px; border: 1px solid #ddd; page-break-inside: avoid;"><h3>Story ${index + 1}</h3><div>${textContent}</div></div>`;
+    });
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>${title} - ${date}</title>
+    <style>
+        @page { margin: 1in; }
+        @media print { body { margin: 0; } .no-print { display: none; }}
+        body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.4; }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        .story { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; page-break-inside: avoid; }
+    </style>
+</head>
+<body>
+    <h1>${title}</h1>
+    <p><strong>By:</strong> ${author} | <strong>Date:</strong> ${date}</p>
+    <p><strong>Source:</strong> Corruption Tracker Dashboard</p>
+    <hr>
+    ${itemsText}
+</body>
+</html>`;
+}
+
+function generateGoogleDocsNewsletter(title, author, date, items) {
+    let itemsHTML = '';
+    items.forEach((item, index) => {
+        itemsHTML += `<h2>Story ${index + 1}</h2><div>${item.innerHTML}</div><hr>`;
+    });
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>${title}</title>
+</head>
+<body>
+    <h1>${title}</h1>
+    <p><b>Author:</b> ${author}</p>
+    <p><b>Date:</b> ${date}</p>
+    <p><b>Source:</b> Corruption Tracker Dashboard</p>
+    <hr>
+    ${itemsHTML}
+</body>
+</html>`;
+}
+
+// Fix 7: Template loading functions
+function loadTemplate(type) {
+    console.log('📋 Loading template:', type);
+    
+    const content = document.getElementById('newsletterContent');
+    const date = new Date().toLocaleDateString();
+    let templateContent = '';
+
+    switch (type) {
+        case 'weekly':
+            templateContent = `
+                <div class="newsletter-item" data-story-id="template-weekly">
+                    <div style="padding: 20px;">
+                        <h2 style="color: #2c3e50; margin-bottom: 15px;">📅 Weekly Corruption Roundup - ${date}</h2>
+                        <p style="line-height: 1.6; color: #555;">This week's most significant corruption cases across the United States. Our comprehensive monitoring system has identified key developments in government transparency and accountability.</p>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <strong>Drag corruption stories here to complete your weekly report</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'breaking':
+            templateContent = `
+                <div class="newsletter-item" data-story-id="template-breaking">
+                    <div style="padding: 20px;">
+                        <h2 style="color: #e74c3c; margin-bottom: 15px;">⚡ Breaking Corruption Alert - ${date}</h2>
+                        <p style="line-height: 1.6; color: #555;">Urgent corruption developments requiring immediate attention from transparency advocates and investigative journalists.</p>
+                        <div style="background: #fef9e7; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #f39c12;">
+                            <strong>⚠️ High-priority cases for immediate review</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'investigation':
+            templateContent = `
+                <div class="newsletter-item" data-story-id="template-investigation">
+                    <div style="padding: 20px;">
+                        <h2 style="color: #9b59b6; margin-bottom: 15px;">🔍 Deep Dive Investigation - ${date}</h2>
+                        <p style="line-height: 1.6; color: #555;">Comprehensive analysis of corruption patterns, political connections, and systemic accountability issues.</p>
+                        <div style="background: #f4f1f8; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <strong>📊 Include network analysis and trend data</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'analysis':
+            templateContent = `
+                <div class="newsletter-item" data-story-id="template-analysis">
+                    <div style="padding: 20px;">
+                        <h2 style="color: #27ae60; margin-bottom: 15px;">📊 Monthly Corruption Analysis - ${date}</h2>
+                        <p style="line-height: 1.6; color: #555;">Statistical trends, predictive insights, and comprehensive analysis for corruption monitoring and prevention.</p>
+                        <div style="background: #eafaf1; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <strong>📈 Data-driven insights and recommendations</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+    }
+    
+    if (content) {
+        content.innerHTML = templateContent;
+        showNewsletterSuccess(`✅ ${type} template loaded! Add more content by dragging stories or using "Add Sample Content".`);
+    }
+}
+
+// Fix 8: Notification functions
+function showNewsletterSuccess(message) {
+    showNewsletterNotification(message, 'success');
+}
+
+function showNewsletterError(message) {
+    showNewsletterNotification(message, 'error');
+}
+
+function showNewsletterNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = type === 'success' ? 'success-message' : 'error-message';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        max-width: 400px;
+        padding: 15px 20px;
+        border-radius: 12px;
+        font-weight: 600;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    `;
+    notification.innerHTML = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Fix 9: Initialize newsletter drag and drop
+function initializeNewsletterBuilder() {
+    console.log('📧 Initializing newsletter builder...');
+    
+    const dropZone = document.getElementById('newsletterContent');
+    if (!dropZone) {
+        console.error('❌ Newsletter drop zone not found');
+        return;
+    }
+
+    // Enhanced drag and drop handlers
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+        
+        const storyData = e.dataTransfer.getData('text/plain');
+        if (storyData) {
+            try {
+                const story = JSON.parse(storyData);
+                addToNewsletter(story);
+            } catch (error) {
+                console.error('❌ Error parsing story data:', error);
+                showNewsletterError('Failed to add story - invalid data format');
+            }
+        }
+    });
+
+    console.log('✅ Newsletter drag-and-drop initialized');
+}
+
+// Fix 10: Enhanced drag start for stories
+function handleDragStart(event) {
+    const storyElement = event.target.closest('.story-item');
+    if (!storyElement) return;
+
+    const storyData = storyElement.getAttribute('data-story');
+    if (!storyData) return;
+
+    event.dataTransfer.setData('text/plain', storyData);
+    event.dataTransfer.effectAllowed = 'copy';
+    
+    // Visual feedback
+    event.target.style.opacity = '0.5';
+    setTimeout(() => {
+        if (event.target) event.target.style.opacity = '1';
+    }, 100);
+}
+
+// Fix 11: Make all functions globally available
+window.addSampleContent = addSampleContent;
+window.addToNewsletter = addToNewsletter;
+window.removeFromNewsletter = removeFromNewsletter;
+window.clearNewsletter = clearNewsletter;
+window.exportNewsletter = exportNewsletter;
+window.loadTemplate = loadTemplate;
+window.handleDragStart = handleDragStart;
+window.initializeNewsletterBuilder = initializeNewsletterBuilder;
+
+// Fix 12: Initialize everything when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Applying complete newsletter fixes...');
+    
+    // Initialize newsletter functionality
+    setTimeout(() => {
+        initializeNewsletterBuilder();
+        console.log('✅ All newsletter functions initialized successfully');
+    }, 1000);
+});
+
+// Fix 13: Also initialize if page is already loaded
+if (document.readyState !== 'loading') {
+    setTimeout(() => {
+        initializeNewsletterBuilder();
+        console.log('✅ Newsletter functions initialized (page already loaded)');
+    }, 1000);
+}
+
+console.log('✅ Complete newsletter and button fixes loaded successfully');
+</script>
 </body>
 </html>
