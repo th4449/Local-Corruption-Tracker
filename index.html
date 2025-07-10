@@ -703,6 +703,52 @@
             </div>
         </div>
 
+<!-- Newsletter Tab -->
+<div id="newsletter" class="tab-content">
+    <div class="card">
+        <h2>📧 Newsletter Builder</h2>
+        <p>Create professional corruption newsletters by dragging stories from the Dashboard.</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 300px; gap: 30px; margin: 20px 0;">
+            <div>
+                <h3>📝 Newsletter Content</h3>
+                <div id="newsletterContent" style="border: 3px dashed #bdc3c7; border-radius: 15px; padding: 30px; min-height: 250px; margin-bottom: 25px;">
+                    <p style="color: #7f8c8d; text-align: center; font-size: 1.1rem;">
+                        🎯 Drag corruption stories here from the Dashboard tab<br>
+                        <small>Or click "Add Sample Content" to test</small>
+                    </p>
+                </div>
+                
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button class="btn" onclick="addSampleContent()">📝 Add Sample Content</button>
+                    <button class="btn" onclick="exportNewsletter('html')">📄 Export HTML</button>
+                    <button class="btn" onclick="exportNewsletter('pdf')">📋 Export PDF</button>
+                    <button class="btn" onclick="clearNewsletter()">🗑 Clear All</button>
+                </div>
+            </div>
+            
+            <div>
+                <h3>🎨 Newsletter Settings</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="text" placeholder="Newsletter Title" id="newsletterTitle" class="filter-select" value="Local Corruption Report">
+                    <input type="text" placeholder="Author Name" id="authorName" class="filter-select" value="Corruption Tracker">
+                    <select id="newsletterTheme" class="filter-select">
+                        <option value="professional">Professional</option>
+                        <option value="investigative">Investigative</option>
+                        <option value="government">Government</option>
+                    </select>
+                </div>
+                
+                <h3 style="margin-top: 25px;">📋 Quick Templates</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn" onclick="loadTemplate('weekly')">📅 Weekly Roundup</button>
+                    <button class="btn" onclick="loadTemplate('breaking')">⚡ Breaking News</button>
+                    <button class="btn" onclick="loadTemplate('summary')">📊 Monthly Summary</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
         <!-- Settings Tab -->
         <div id="settings" class="tab-content">
             <div class="card">
@@ -2644,6 +2690,105 @@ forceCompleteLoading: function() {
         window.exportData = exportData;
         window.loadSampleData = loadSampleData;
         window.checkAllAPIs = checkAllAPIs;
+// Newsletter Functions
+function addSampleContent() {
+    const content = document.getElementById('newsletterContent');
+    const date = new Date().toLocaleDateString();
+    content.innerHTML = `
+        <div style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #3498db;">
+            <h3>🚨 Breaking: Local Corruption Alert</h3>
+            <p><strong>Date:</strong> ${date}</p>
+            <p>This is a sample newsletter item. In a real newsletter, this would be a corruption story you dragged from the Dashboard.</p>
+            <p><strong>Impact:</strong> $500,000 in missing funds</p>
+        </div>
+        <div style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #e74c3c;">
+            <h3>🔍 Investigation Update</h3>
+            <p>Another sample story about ongoing corruption investigation...</p>
+        </div>
+    `;
+}
+
+function clearNewsletter() {
+    const content = document.getElementById('newsletterContent');
+    content.innerHTML = `
+        <p style="color: #7f8c8d; text-align: center; font-size: 1.1rem;">
+            🎯 Drag corruption stories here from the Dashboard tab<br>
+            <small>Or click "Add Sample Content" to test</small>
+        </p>
+    `;
+}
+
+function loadTemplate(type) {
+    const content = document.getElementById('newsletterContent');
+    const date = new Date().toLocaleDateString();
+    
+    if (type === 'weekly') {
+        content.innerHTML = `
+            <div style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h2>📅 Weekly Corruption Roundup - ${date}</h2>
+                <p>This week's most significant corruption cases...</p>
+            </div>
+        `;
+    } else if (type === 'breaking') {
+        content.innerHTML = `
+            <div style="margin-bottom: 20px; padding: 20px; background: #fff3cd; border-radius: 10px;">
+                <h2>⚡ Breaking Corruption Alert - ${date}</h2>
+                <p>Urgent corruption development requiring immediate attention...</p>
+            </div>
+        `;
+    } else if (type === 'summary') {
+        content.innerHTML = `
+            <div style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h2>📊 Monthly Corruption Summary - ${date}</h2>
+                <p>Statistical overview of corruption cases this month...</p>
+            </div>
+        `;
+    }
+}
+
+function exportNewsletter(format) {
+    const content = document.getElementById('newsletterContent');
+    const title = document.getElementById('newsletterTitle').value || 'Corruption Newsletter';
+    const author = document.getElementById('authorName').value || 'Corruption Tracker';
+    const date = new Date().toLocaleDateString();
+    
+    if (format === 'html') {
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${title}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; }
+                    .header { background: #3498db; color: white; padding: 20px; text-align: center; border-radius: 10px; }
+                    .content { margin-top: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>${title}</h1>
+                    <p>By ${author} • ${date}</p>
+                </div>
+                <div class="content">
+                    ${content.innerHTML}
+                </div>
+            </body>
+            </html>
+        `;
+        
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${title.replace(/[^a-z0-9]/gi, '_')}_${date.replace(/\//g, '_')}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        alert('✅ Newsletter exported as HTML file!');
+    } else if (format === 'pdf') {
+        alert('📋 PDF export coming soon! Use HTML export for now.');
+    }
+}
     </script>
 </body>
 </html>
