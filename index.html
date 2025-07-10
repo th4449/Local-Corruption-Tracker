@@ -1560,76 +1560,36 @@
             },
 
             async loadAllRealData() {
-                try {
-                    const btn = document.getElementById('pullBtn');
-                    const originalText = btn.textContent;
-                    btn.disabled = true;
-                    btn.classList.add('loading');
-                    btn.textContent = 'Loading...';
+    try {
+        const btn = document.getElementById('pullBtn');
+        btn.disabled = true;
+        btn.textContent = 'Loading...';
 
-                    const storiesList = document.getElementById('storiesList');
-                    if (storiesList) {
-                        storiesList.innerHTML = `
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                <p>🔄 Fetching real corruption data from government APIs and RSS feeds...</p>
-                                <small>This may take 30-60 seconds for comprehensive data collection</small>
-                            </div>
-                        `;
-                    }
+        console.log('🔄 Starting data collection...');
+        
+        const rssManager = new RSSFeedManager();
+        const stories = await rssManager.fetchAllFeeds();
+        
+        console.log(`✅ Collected ${stories.length} stories`);
+        
+        if (stories.length > 0) {
+            this.stories = stories;
+            this.refreshDisplay();
+            this.showSuccess(`🎉 Successfully loaded ${stories.length} real corruption stories!`);
+        } else {
+            throw new Error('No stories found');
+        }
 
-                    const rssManager = new RSSFeedManager();
-                    const apiManager = new DataGovAPIManager();
-
-                    // Load RSS feeds
-                    console.log('📰 Loading RSS feeds...');
-                    let rssStories = [];
-                    try {
-                        rssStories = await rssManager.fetchAllFeeds();
-                        console.log(`✅ RSS: ${rssStories.length} stories loaded`);
-                    } catch (rssError) {
-                        console.warn('RSS loading failed:', rssError);
-                    }
-
-                    // Load API data
-                    console.log('🏛️ Loading government APIs...');
-                    let apiData = [];
-                    try {
-                        apiData = await apiManager.fetchCorruptionData();
-                        console.log(`✅ APIs: ${apiData.length} stories loaded`);
-                    } catch (apiError) {
-                        console.warn('API loading failed:', apiError);
-                    }
-
-                    // Combine all data
-                    const allStories = [...rssStories, ...apiData];
-                    const uniqueStories = this.deduplicateStories(allStories);
-
-                    if (uniqueStories.length > 0) {
-                        this.stories = uniqueStories;
-                        this.refreshDisplay();
-                        
-                        let message = `🎉 Successfully loaded ${uniqueStories.length} real corruption stories!\n`;
-                        if (rssStories.length > 0) message += `📰 RSS Feeds: ${rssStories.length} stories\n`;
-                        if (apiData.length > 0) message += `🏛️ Government APIs: ${apiData.length} stories\n`;
-                        message += `🔍 Data.gov API: Connected with your key`;
-                        
-                        this.showSuccess(message);
-                    } else {
-                        throw new Error('No corruption stories found from any source');
-                    }
-
-                } catch (error) {
-                    console.error('Real data loading error:', error);
-                    this.showError('Failed to load real data: ' + error.message + '. Loading sample data instead...');
-                    setTimeout(() => loadSampleData(), 1000);
-                } finally {
-                    const btn = document.getElementById('pullBtn');
-                    btn.disabled = false;
-                    btn.classList.remove('loading');
-                    btn.textContent = '🔄 Load Real Data';
-                }
-            },
+    } catch (error) {
+        console.error('Load error:', error);
+        this.showError('Error: ' + error.message);
+        loadSampleData(); // Fallback to sample data
+    } finally {
+        const btn = document.getElementById('pullBtn');
+        btn.disabled = false;
+        btn.textContent = '🔄 Load Real Data';
+    }
+}
 
             deduplicateStories: function(stories) {
                 const seen = new Set();
