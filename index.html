@@ -1596,7 +1596,19 @@
         btn.textContent = '🔄 Load Real Data';
     }
 },
-
+forceCompleteLoading: function() {
+    const btn = document.getElementById('pullBtn');
+    btn.disabled = false;
+    btn.textContent = '🔄 Load Real Data';
+    btn.classList.remove('loading');
+    
+    if (this.stories.length > 0) {
+        this.refreshDisplay();
+        this.showSuccess(`✅ Collected ${this.stories.length} stories (auto-completed)`);
+    } else {
+        this.showError('Loading timed out - try again');
+    }
+},
             deduplicateStories: function(stories) {
                 const seen = new Set();
                 const urlSeen = new Set();
