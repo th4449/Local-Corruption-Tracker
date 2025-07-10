@@ -1565,6 +1565,11 @@
         btn.disabled = true;
         btn.textContent = 'Loading...';
 
+        const safetyTimeout = setTimeout(() => {
+            console.log('⏰ Safety timeout - forcing completion');
+            this.forceCompleteLoading();
+        }, 45000); // 45 seconds max
+        
         console.log('🔄 Starting data collection...');
         
         const rssManager = new RSSFeedManager();
@@ -1579,6 +1584,7 @@
         } else {
             throw new Error('No stories found');
         }
+        clearTimeout(safetyTimeout);
 
     } catch (error) {
         console.error('Load error:', error);
